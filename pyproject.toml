@@ -42,7 +42,7 @@ select = ["E", "F", "I", "UP", "B"]
 
 [tool.pytest.ini_options]
 markers = ["llm: needs a real llama-server (KENGINE_TEST_LLM_URL)"]
-addopts = "-m 'not llm'"
+addopts = "-m 'not llm' --import-mode=importlib"
 testpaths = ["tests"]
 
 [tool.ruff.format]
