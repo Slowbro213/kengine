@@ -1,0 +1,5 @@
+{"item_id": "folio-tasksource-981", "labels": ["invalid_inference"], "note": "Treats 'neither picky nor needs money' (the consequent of premise 7's conditional) as established for Hannah, then concludes True. The premises are arguably inconsistent here (P1 + P7), which may explain the gold False."}
+{"item_id": "folio-tasksource-958", "labels": ["fabricated_fact", "invalid_inference"], "note": "Assumes Peter is a clumsy foodie (never stated), putting him in the spill-and-cleanly case; separately, in that case it gets both tidy and not tidy and picks tidy instead of ruling the case out."}
+{"item_id": "folio-tasksource-1348", "labels": ["truncated"], "note": "Ran out of the 32k budget circling the monkey/bird partition; no answer."}
+{"item_id": "folio-tasksource-849", "labels": ["truncated"], "note": "Ran out of the 32k budget re-tracing P5/P6; no answer."}
+{"item_id": "folio-tasksource-412", "labels": ["invalid_inference"], "note": "From 'one person in the tie is Belgian' and 'Descampe is Belgian and on the leaderboard' concludes Descampe is that person; says outright 'in similar puzzles this usually resolves to True'."}

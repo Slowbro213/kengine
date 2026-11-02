@@ -1,0 +1,15 @@
+{
+  "suite": "gsm8k",
+  "solver": "baseline",
+  "n": 10,
+  "headline_accuracy": 1.0,
+  "abstention_rate": 0.0,
+  "answered_accuracy": 1.0,
+  "status_counts": {
+    "answered": 10
+  },
+  "mean_model_calls": 1.0,
+  "mean_prompt_tokens": 152.5,
+  "mean_completion_tokens": 5568.9,
+  "mean_wall_s": 87.50643844339993
+}

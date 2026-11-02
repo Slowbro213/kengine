@@ -1,0 +1,2 @@
+{"item_id": "hotpotqa-5a803d695542996402f6a494", "labels": ["other"], "note": "Scoring, not a model error: the answer ('two-player abstract strategy versus a railway-themed family game') is right and contains the gold, which is the fragment 'Colt Express is a railway-themed'. Exact match fails."}
+{"item_id": "hotpotqa-5abd455c55429924427fcf5a", "labels": ["other"], "note": "Scoring, not a model error: 'Rock band' vs gold 'was a rock band'. Exact match fails on the gold's leading verb."}
