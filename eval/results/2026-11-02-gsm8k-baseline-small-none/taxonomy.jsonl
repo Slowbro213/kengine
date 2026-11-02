@@ -1,0 +1,7 @@
+{"item_id": "gsm8k-255", "labels": ["other"], "note": "Question is inconsistent: 'Ten stalls' then 'each of the twenty stalls'. The model followed the literal text (40/20 = 2 per stall, 8*22 = 176); the gold (192) assumes 10 stalls."}
+{"item_id": "gsm8k-286", "labels": ["truncated"], "note": "Had the right answer (90) early, then looped 'I'll output it now / Final answer: 90' inside the thinking until the 32k budget ran out."}
+{"item_id": "gsm8k-300", "labels": ["truncated"], "note": "Same loop as gsm8k-286: right answer (78) in the thinking, repeated until the budget ran out; never emitted a reply."}
+{"item_id": "gsm8k-306", "labels": ["misread_question"], "note": "Read 'half of what is left is sold equally in the afternoon and evening' as 10 loaves split across both slots (5); gold takes the 20 left split in halves (10). The phrasing is ambiguous; the model noticed and chose the 'trick' reading."}
+{"item_id": "gsm8k-454", "labels": ["other"], "note": "Gold looks wrong: 2 people x 4 apples x 30 days = 240, the model's answer; gold is 150."}
+{"item_id": "gsm8k-649", "labels": ["other"], "note": "Gold is debatable: 70 x 2000 = 140000, +20000 = 160000 (model). Gold 162000 also adds the original 2000 on top of the '70 times as many' total. Arithmetic was right after a wobble (briefly wrote 14,000, corrected itself)."}
+{"item_id": "gsm8k-1067", "labels": ["truncated"], "note": "Degenerate output: the thinking collapsed into thousands of spaces mid-sentence and used up the budget."}
