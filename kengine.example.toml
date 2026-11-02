@@ -1,0 +1,54 @@
+# kengine configuration. Copy to ./kengine.toml (project) or ~/.config/kengine/config.toml (user).
+# Later files override earlier ones key by key; every key below shows its default.
+
+data_dir = "~/.local/share/kengine"   # where `kengine run` keeps sessions (use an absolute path)
+default_profile = "standard"           # quick | standard | thorough | exhaustive
+
+[backend]
+kind = "llamacpp"                      # only llama-server is supported in v1
+base_url = "http://127.0.0.1:8080"     # llama-server address
+model = "qwen3.5-9b"                   # model name sent in requests; doctor reports the loaded GGUF
+timeout_s = 600.0                      # per-request HTTP timeout
+
+[context]
+step_prompt_tokens = 14000             # token budget for each step's assembled prompt
+
+[eval]
+token_budget_per_task = 32768          # completion tokens per eval item (baseline and kengine)
+
+# Model roles. Sampling defaults follow the Qwen3.5 model card.
+[roles.think]                          # free-text reasoning, thinking mode
+thinking = true
+max_tokens = 8192
+[roles.think.sampling]
+temperature = 1.0
+top_p = 0.95
+top_k = 20
+min_p = 0.0
+presence_penalty = 1.5
+repetition_penalty = 1.0
+
+[roles.extract]                        # schema-constrained claim extraction, non-thinking
+thinking = false
+max_tokens = 4096
+[roles.extract.sampling]
+temperature = 0.3
+top_p = 0.8
+top_k = 20
+min_p = 0.0
+presence_penalty = 0.0
+repetition_penalty = 1.0
+
+[roles.critic]                         # narrow critic prompts (used from M5)
+thinking = false
+max_tokens = 4096
+[roles.critic.sampling]
+temperature = 0.2
+top_p = 0.8
+top_k = 20
+min_p = 0.0
+presence_penalty = 0.0
+repetition_penalty = 1.0
+
+# [roles.baseline] defaults to a copy of [roles.think] with max_tokens = eval.token_budget_per_task.
+# Any keys set here are layered over that copy.
