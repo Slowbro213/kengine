@@ -1,0 +1,276 @@
+import json
+from pathlib import Path
+
+from kengine.audit.session import Session
+from kengine.backend.fake import ScriptedBackend, ScriptedReply
+from kengine.backend.types import FinishReason
+from kengine.beliefs.status import Status
+from kengine.checkers.arithmetic import ArithmeticChecker
+from kengine.checkers.structure import StructureChecker
+from kengine.config import RolesConfig
+from kengine.loop.agent import NO_LIMITS, Agent, Limits
+from kengine.loop.profiles import get_profile
+from kengine.loop.task import Task
+
+Claim = dict[str, object]
+Action = dict[str, object]
+
+
+def think(text: str = "Working:\n1. something\nNext: continue", finish: FinishReason = "stop"):
+    return ScriptedReply(content=text, finish_reason=finish)
+
+
+def extract_json(claims: list[Claim], action: Action) -> ScriptedReply:
+    return ScriptedReply(content=json.dumps({"claims": claims, "action": action}))
+
+
+def comp(ref: str, expr: str, result: str, premises: list[str] | None = None) -> Claim:
+    return {
+        "ref": ref,
+        "type": "computation",
+        "text": f"{expr} = {result}",
+        "premises": premises or [],
+        "computation": {"expression": expr, "claimed_result": result},
+    }
+
+
+def claim(ref: str, type_: str, text: str, premises: list[str] | None = None) -> Claim:
+    return {"ref": ref, "type": type_, "text": text, "premises": premises or []}
+
+
+def final(answer: str, preconditions: list[str]) -> Action:
+    return {"kind": "final_answer", "answer": answer, "preconditions": preconditions}
+
+
+CONTINUE: Action = {"kind": "continue"}
+
+
+class Sleeps(list[float]):
+    def __call__(self, s: float) -> None:
+        self.append(s)
+
+
+def make_agent(
+    script: list[ScriptedReply],
+    profile: str,
+    tmp: Path,
+    limits: Limits = NO_LIMITS,
+    sleep: Sleeps | None = None,
+) -> tuple[Agent, ScriptedBackend]:
+    backend = ScriptedBackend(script)
+    agent = Agent(
+        backend=backend,
+        roles=RolesConfig(),
+        profile=get_profile(profile),
+        context_budget=8000,
+        checkers=[StructureChecker(), ArithmeticChecker()],
+        session=Session.create(tmp),
+        limits=limits,
+        sleep=Sleeps() if sleep is None else sleep,
+    )
+    return agent, backend
+
+
+def think_prompts(backend: ScriptedBackend) -> list[str]:
+    return [c.messages[-1].content for c in backend.calls if c.schema_name is None]
+
+
+def events(session_dir: Path) -> list[dict[str, object]]:
+    lines = (session_dir / "events.jsonl").read_text().splitlines()
+    return [json.loads(line) for line in lines]
+
+
+def test_happy_path_verified_computation_answers(tmp_path: Path):
+    script = [
+        think("Working:\n1. 12*7 = 84\nFinal answer: 84\nRests on: 1"),
+        *[extract_json([comp("c1", "12*7", "84")], final("84", ["c1"]))] * 3,
+    ]
+    agent, _ = make_agent(script, "standard", tmp_path)
+    r = agent.run(Task(goal="12*7?"))
+    assert (r.status, r.answer, r.steps, r.model_calls) == ("answered", "84", 1, 4)
+    assert r.blocked_answer is None and r.completion_tokens > 0
+    assert Session.open(r.session_dir).store.get("b1").status == Status.VERIFIED
+    kinds = [e["kind"] for e in events(r.session_dir)]
+    assert kinds[0] == "session_started" and kinds[-1] == "run_finished"
+    assert {"think", "extraction", "vote", "belief_added", "verdict", "gate"} <= set(kinds)
+
+
+def test_wrong_arithmetic_is_contradicted_and_fed_back(tmp_path: Path):
+    script = [
+        think(),
+        *[extract_json([comp("c1", "12*7", "82")], final("82", ["c1"]))] * 3,
+        think(),
+        *[extract_json([comp("c1", "12*7", "84")], final("84", ["c1"]))] * 3,
+    ]
+    agent, backend = make_agent(script, "standard", tmp_path)
+    r = agent.run(Task(goal="12*7?"))
+    assert (r.status, r.answer, r.steps) == ("answered", "84", 2)
+    step2 = think_prompts(backend)[1]
+    assert "b1 contradicted: `12*7` evaluates to 84, not 82" in step2
+    assert "final answer blocked: b1 is contradicted" in step2
+
+
+def test_assumption_answer_recorded_under_standard(tmp_path: Path):
+    # The plan's version rested the answer on an unchecked inference, which its own
+    # standard-gate rules block; a verified computation on the assumption keeps the intent.
+    script = [
+        think(),
+        *[
+            extract_json(
+                [claim("c1", "assumption", "a pen costs 2"), comp("c2", "3*2", "6", ["c1"])],
+                final("6", ["c2"]),
+            )
+        ]
+        * 3,
+    ]
+    agent, _ = make_agent(script, "standard", tmp_path)
+    r = agent.run(Task(goal="3 pens?"))
+    assert (r.status, r.answer, r.acted_on_assumptions) == ("answered", "6", ["b1"])
+
+
+def test_all_extractions_invalid_gives_feedback_and_continues(tmp_path: Path):
+    script = [
+        think(),
+        *[ScriptedReply(content="{not json")] * 3,
+        think(),
+        *[extract_json([comp("c1", "2+2", "4")], final("4", ["c1"]))] * 3,
+    ]
+    agent, backend = make_agent(script, "standard", tmp_path)
+    r = agent.run(Task(goal="2+2?"))
+    assert (r.status, r.answer, r.steps) == ("answered", "4", 2)
+    assert "could not turn your reasoning into claims" in think_prompts(backend)[1]
+    failed = [e for e in events(r.session_dir) if e["kind"] == "extraction" and not e["ok"]]
+    assert len(failed) == 3
+
+
+def test_think_cutoff_skips_extraction(tmp_path: Path):
+    script = [
+        think("", finish="length"),
+        think(),
+        *[extract_json([comp("c1", "2+2", "4")], final("4", ["c1"]))] * 3,
+    ]
+    agent, backend = make_agent(script, "standard", tmp_path)
+    r = agent.run(Task(goal="2+2?"))
+    assert r.status == "answered"
+    assert backend.calls[1].schema_name is None
+    assert "reasoning was cut off" in think_prompts(backend)[1]
+
+
+def test_backend_failure_retries_once_then_errors(tmp_path: Path):
+    sleeps = Sleeps()
+    script = [ScriptedReply(error="boom"), ScriptedReply(error="boom again")]
+    agent, _ = make_agent(script, "standard", tmp_path, sleep=sleeps)
+    r = agent.run(Task(goal="x"))
+    assert r.status == "error" and r.error is not None and "boom again" in r.error
+    assert sleeps == [5.0]
+    assert events(r.session_dir)[-1]["kind"] == "run_finished"
+    assert (r.session_dir / "beliefs.sqlite").exists()
+
+
+def test_backend_failure_recovers_after_retry(tmp_path: Path):
+    script = [
+        ScriptedReply(error="boom"),
+        think(),
+        *[extract_json([comp("c1", "2+2", "4")], final("4", ["c1"]))] * 3,
+    ]
+    agent, _ = make_agent(script, "standard", tmp_path)
+    assert agent.run(Task(goal="2+2?")).status == "answered"
+
+
+def test_every_extract_call_failing_is_retried(tmp_path: Path):
+    sleeps = Sleeps()
+    script = [
+        think(),
+        ScriptedReply(error="down"),
+        *[extract_json([comp("c1", "2+2", "4")], final("4", ["c1"]))],
+    ]
+    agent, _ = make_agent(script, "quick", tmp_path, sleep=sleeps)
+    r = agent.run(Task(goal="2+2?"))
+    assert (r.status, sleeps) == ("answered", [5.0])
+
+
+def test_loop_detection_stops_partial(tmp_path: Path):
+    step = [think(), *[extract_json([claim("c1", "inference", "so x")], CONTINUE)] * 3]
+    agent, _ = make_agent(step * 4, "standard", tmp_path)
+    r = agent.run(Task(goal="x"))
+    assert (r.status, r.steps) == ("partial", 3)
+
+
+def test_step_limit_budget_exhausted(tmp_path: Path):
+    step = [think(), extract_json([claim("c1", "fact", "x is 1")], CONTINUE)]
+    agent, _ = make_agent(step * 5, "quick", tmp_path, limits=Limits(max_steps=2))
+    r = agent.run(Task(goal="x"))
+    assert (r.status, r.steps, r.answer) == ("budget_exhausted", 2, None)
+
+
+def test_completion_token_limit(tmp_path: Path):
+    step = [think("x" * 400), extract_json([claim("c1", "fact", "x is 1")], CONTINUE)]
+    limits = Limits(max_completion_tokens=50)
+    agent, _ = make_agent(step * 5, "quick", tmp_path, limits=limits)
+    r = agent.run(Task(goal="x"))
+    assert (r.status, r.steps) == ("budget_exhausted", 1)
+
+
+def test_blocked_answer_reported_when_limit_hit(tmp_path: Path):
+    script = [
+        think(),
+        extract_json([claim("c1", "fact", "Paris is the capital")], final("Paris", ["c1"])),
+    ]
+    agent, _ = make_agent(script, "quick", tmp_path, limits=Limits(max_steps=1))
+    r = agent.run(Task(goal="capital of France?"))
+    assert (r.status, r.answer, r.blocked_answer) == ("blocked", None, "Paris")
+
+
+def test_empty_final_answer_is_an_issue(tmp_path: Path):
+    script = [
+        think(),
+        extract_json([comp("c1", "2+2", "4")], final("  ", ["c1"])),
+        think(),
+        extract_json([], final("4", ["b1"])),
+    ]
+    agent, backend = make_agent(script, "quick", tmp_path)
+    r = agent.run(Task(goal="2+2?"))
+    assert (r.status, r.answer) == ("answered", "4")
+    assert "final answer had no text" in think_prompts(backend)[1]
+
+
+def test_load_bearing_scope_only_checks_answer_closure(tmp_path: Path):
+    script = [
+        think(),
+        extract_json([comp("c1", "2+2", "4"), comp("c2", "3*3", "9")], final("9", ["c2"])),
+    ]
+    agent, _ = make_agent(script, "quick", tmp_path)
+    r = agent.run(Task(goal="3*3?"))
+    store = Session.open(r.session_dir).store
+    assert r.status == "answered"
+    assert store.get("b2").status == Status.VERIFIED
+    assert store.get("b1").status == Status.UNCHECKED
+
+
+def test_unresolvable_premise_link_removed_with_issue(tmp_path: Path):
+    script = [
+        think(),
+        extract_json([claim("c1", "inference", "so x", ["b42", "c9"])], CONTINUE),
+        think(),
+        extract_json([comp("c1", "2+2", "4")], final("4", ["c1"])),
+    ]
+    agent, backend = make_agent(script, "quick", tmp_path)
+    r = agent.run(Task(goal="x"))
+    assert r.status == "answered"
+    assert Session.open(r.session_dir).store.get("b1").claim.premises == ()
+    step2 = think_prompts(backend)[1]
+    assert "c1 cited unknown b42; link removed" in step2
+    assert "c1 cited unknown c9; link removed" in step2
+
+
+def test_premises_inserted_before_dependents(tmp_path: Path):
+    script = [
+        think(),
+        extract_json([comp("c2", "4*2", "8", ["c1"]), comp("c1", "2+2", "4")], final("8", ["c2"])),
+    ]
+    agent, _ = make_agent(script, "quick", tmp_path)
+    r = agent.run(Task(goal="x"))
+    store = Session.open(r.session_dir).store
+    assert r.status == "answered"
+    assert store.get("b1").claim.text == "2+2 = 4"
+    assert store.get("b2").claim.premises == ("b1",)
