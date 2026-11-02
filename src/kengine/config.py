@@ -7,7 +7,7 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any, Literal, cast
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from kengine.backend.types import RoleConfig, SamplingParams
 
@@ -77,6 +77,11 @@ class KengineConfig(BaseModel):
     eval: EvalConfig = Field(default_factory=EvalConfig)
     data_dir: Path = Field(default_factory=lambda: Path.home() / ".local/share/kengine")
     default_profile: str = "standard"
+
+    @field_validator("data_dir")
+    @classmethod
+    def _expand_home(cls, value: Path) -> Path:
+        return value.expanduser()
 
     @model_validator(mode="before")
     @classmethod

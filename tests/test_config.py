@@ -57,3 +57,9 @@ def test_explicit_baseline_is_kept(tmp_path: Path) -> None:
     p.write_text("[roles.baseline]\nthinking = false\nmax_tokens = 100\n")
     cfg = load_config([p])
     assert cfg.roles.baseline.max_tokens == 100 and cfg.roles.baseline.thinking is False
+
+
+def test_data_dir_expands_home(tmp_path: Path) -> None:
+    p = tmp_path / "e.toml"
+    p.write_text('data_dir = "~/kdata"\n')
+    assert load_config([p]).data_dir == Path.home() / "kdata"
