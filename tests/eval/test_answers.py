@@ -15,3 +15,7 @@ def test_extract_final_answer_tolerates_markdown_marker() -> None:
 
 def test_normalize_text() -> None:
     assert normalize_text("The  Eiffel Tower!") == "eiffel tower"
+
+
+def test_extract_final_answer_mid_line() -> None:
+    assert extract_final_answer("So the final answer: 12 apples") == "12 apples"

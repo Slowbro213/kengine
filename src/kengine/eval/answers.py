@@ -5,8 +5,8 @@ from __future__ import annotations
 import re
 import string
 
-# Tolerates markdown around the marker: `**Final answer:** 7`, `**Final answer**: 7`.
-_FINAL_RE = re.compile(r"(?im)^[\s*_#>]*final answer[\s*_]*[:：][\s*_]*(.+?)\s*$")
+# The marker may sit mid-line and carry markdown: `**Final answer:** 7`, `**Final answer**: 7`.
+_FINAL_RE = re.compile(r"(?im)\bfinal answer[\s*_]*[:：][\s*_]*(.+?)\s*$")
 _ARTICLES_RE = re.compile(r"\b(a|an|the)\b")
 _PUNCT = str.maketrans("", "", string.punctuation)
 
