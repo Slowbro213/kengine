@@ -11,15 +11,21 @@ from typing import Annotated, Literal
 
 import typer
 
+from kengine.audit.session import Session
 from kengine.backend import make_backend
 from kengine.backend.types import ModelBackend
+from kengine.checkers import default_checkers
 from kengine.cli.doctor import nvidia_smi, render_report, run_doctor
 from kengine.config import BackendConfig, KengineConfig, default_config_paths, load_config
 from kengine.eval import suites
 from kengine.eval.baseline import BaselineSolver
+from kengine.eval.kengine_solver import KengineSolver
 from kengine.eval.runner import results_dir_name, run_eval
 from kengine.eval.taxonomy import summarize_taxonomy
 from kengine.eval.types import Size, Solver, SuiteName
+from kengine.loop.agent import Agent, Limits
+from kengine.loop.profiles import get_profile
+from kengine.loop.task import Task
 
 app = typer.Typer(no_args_is_help=True, help="kengine: check a small model's reasoning.")
 
@@ -71,15 +77,25 @@ def eval_cmd(
 ) -> None:
     """Run a suite; results go to OUT/<date>-<suite>-<solver>-<size>-<profile>."""
     cfg, _ = _config()
-    if solver == "kengine":
-        typer.echo("--solver kengine is available after Task 16", err=True)
-        raise typer.Exit(2)
     profile_name = "none"
+    if solver == "kengine":
+        profile_name = profile or cfg.default_profile
+        _profile_or_exit(profile_name)
+    elif profile is not None:
+        typer.echo("--profile applies to the kengine solver only", err=True)
+        raise typer.Exit(2)
+    out_dir = out / results_dir_name(datetime.date.today(), suite, solver, size, profile_name)
     backend = backend_factory(cfg.backend)
-    the_solver: Solver = BaselineSolver(backend, cfg.roles.baseline, cfg.eval.token_budget_per_task)
+    budget = cfg.eval.token_budget_per_task
+    the_solver: Solver
+    if solver == "kengine":
+        the_solver = KengineSolver(
+            backend, cfg, get_profile(profile_name), out_dir / "sessions", budget
+        )
+    else:
+        the_solver = BaselineSolver(backend, cfg.roles.baseline, budget)
     health = backend.health()
     items = suites.load_items(suite, size, seed)
-    out_dir = out / results_dir_name(datetime.date.today(), suite, solver, size, profile_name)
     run_config: dict[str, object] = {
         "suite": suite,
         "solver": solver,
@@ -102,6 +118,59 @@ def eval_cmd(
         f"answered_acc={answered} statuses={m.status_counts} "
         f"mean_wall_s={m.mean_wall_s:.1f}"
     )
+
+
+def _profile_or_exit(name: str) -> None:
+    try:
+        get_profile(name)
+    except KeyError as e:
+        typer.echo(str(e.args[0]), err=True)
+        raise typer.Exit(2) from None
+
+
+@app.command()
+def run(
+    task: Annotated[str, typer.Argument(help="What to solve.")],
+    profile: Annotated[
+        str | None, typer.Option(help="quick | standard | thorough | exhaustive")
+    ] = None,
+    max_steps: Annotated[int | None, typer.Option(min=1)] = None,
+    max_tokens: Annotated[
+        int | None, typer.Option(min=1, help="Completion-token budget for the whole run.")
+    ] = None,
+    max_wall_s: Annotated[float | None, typer.Option(min=0)] = None,
+) -> None:
+    """Solve TASK with the agent loop. Exits 0 when answered, 3 otherwise."""
+    cfg, _ = _config()
+    profile_name = profile or cfg.default_profile
+    _profile_or_exit(profile_name)
+    session = Session.create(cfg.data_dir / "sessions")
+    try:
+        agent = Agent(
+            backend=backend_factory(cfg.backend),
+            roles=cfg.roles,
+            profile=get_profile(profile_name),
+            context_budget=cfg.context.step_prompt_tokens,
+            checkers=default_checkers(),
+            session=session,
+            limits=Limits(
+                max_steps=max_steps, max_completion_tokens=max_tokens, max_wall_s=max_wall_s
+            ),
+        )
+        r = agent.run(Task(goal=task))
+        typer.echo(f"status: {r.status}")
+        if r.answer is not None:
+            typer.echo(f"answer: {r.answer}")
+        elif r.blocked_answer is not None:
+            typer.echo(f"blocked answer (unverified): {r.blocked_answer}")
+        if r.error is not None:
+            typer.echo(f"error: {r.error}")
+        for id in r.acted_on_assumptions:
+            typer.echo(f"ASSUMED: {id} {session.store.get(id).claim.text}")
+        typer.echo(f"session: {r.session_dir}")
+    finally:
+        session.close()
+    raise typer.Exit(0 if r.status == "answered" else 3)
 
 
 @app.command("eval-summarize")

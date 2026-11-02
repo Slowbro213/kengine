@@ -64,3 +64,19 @@ Run these inside `nix-shell` on NixOS.
 2. For each suite in gsm8k, folio, hotpotqa: `uv run kengine eval <suite> --solver baseline --size smoke`, then `--size small`. Runs resume: rerunning the same command skips items already in `items.jsonl`.
 3. For each `failures_sample.jsonl`, write `taxonomy.jsonl` using `docs/eval/error-taxonomy.md`, then run `uv run kengine eval-summarize <dir>`.
 4. Commit everything under `eval/results/` except `sessions/` (gitignored), plus `eval/results/CHECKPOINT-A.md`: headline accuracy per suite, top 3 error labels, the server command and the GGUF file name. Push only with the owner's go-ahead.
+
+## Checkpoint B (kengine vs. baseline)
+
+Run these inside `nix-shell` on NixOS, with the server from Setup step 4 running.
+
+1. `git pull && uv sync --extra eval && uv run kengine doctor`.
+2. Smoke-test the agent against the server: `KENGINE_TEST_LLM_URL=http://127.0.0.1:8080 uv run pytest -m llm -v`.
+3. `uv run kengine run "A shop sells pens at \$1.25. How much do 12 pens cost?" --profile standard`. Record the output. Check that `beliefs.sqlite` and `events.jsonl` in the printed session directory look sensible: the computation claim should be `verified`, and the log should start with `session_started` and end with `run_finished`.
+4. For each suite in gsm8k, folio, hotpotqa: `uv run kengine eval <suite> --solver kengine --size small --profile quick`, then `--profile standard`. Sessions go under each results directory's `sessions/`.
+5. Write `eval/results/CHECKPOINT-B.md` with:
+   - a table of headline accuracy, abstention rate and answered accuracy per suite and profile, next to the Checkpoint A baseline
+   - mean wall-clock time per item
+   - 3 example audit trails (one where kengine helped, one where it hurt, one blocked), as excerpts from `events.jsonl`
+6. Commit everything under `eval/results/` except `sessions/`. Push only with the owner's go-ahead.
+
+M1 only has the structure and arithmetic checkers, so under the `standard` gate any answer that rests on an unchecked fact or inference is blocked. Expect a high abstention rate on folio and hotpotqa until the logic checker (M2) and evidence checks (M3) arrive; that's by design, and the checkpoint should report it, not work around it.
