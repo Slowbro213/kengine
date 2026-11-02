@@ -1,0 +1,15 @@
+{
+  "config_paths": [],
+  "health": {
+    "ok": true,
+    "model": "Huihui-Qwen3.5-9B-abliterated.i1-Q4_K_M.gguf",
+    "n_ctx": 32768,
+    "detail": "ok"
+  },
+  "structured_ok": true,
+  "structured_detail": "parsed {\"ok\":true}",
+  "thinking_separated": true,
+  "thinking_detail": "content='5' finish=stop",
+  "gpu": "NVIDIA GeForce RTX 5060, 6356 MiB, 8151 MiB",
+  "ok": true
+}
