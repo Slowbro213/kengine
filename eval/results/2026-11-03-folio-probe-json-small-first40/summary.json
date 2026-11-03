@@ -1,0 +1,8 @@
+{
+  "syntax": "json",
+  "n": 40,
+  "all_formalized": 25,
+  "decided": 27,
+  "correct": 16,
+  "mean_wall_s": 3.4210436056742766
+}

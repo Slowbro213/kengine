@@ -4,6 +4,6 @@ __pycache__/
 *.sqlite
 .pytest_cache/
 .ruff_cache/
-eval/results/*/sessions/
+eval/results/**/sessions/
 kengine.toml
 .worktrees/
