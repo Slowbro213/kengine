@@ -74,9 +74,20 @@ def _stems(text: str) -> set[str]:
     return {w.removesuffix("s") for w in words if w not in _STOPWORDS}
 
 
+# Ordinals in what a fact cites, so "Week 1" can restate "the first week".
+_ORDINALS = {
+    w: Fraction(i)
+    for i, w in enumerate(
+        "first second third fourth fifth sixth seventh eighth ninth tenth".split(), 1
+    )
+}
+_ORDINAL_RE = re.compile(r"\b(" + "|".join(_ORDINALS) + r")\b", re.IGNORECASE)
+
+
 def _numbers(rec: BeliefRecord) -> set[Fraction]:
     claim = rec.claim
     found = numbers_in(claim.text)
+    found |= {_ORDINALS[m.group(1).lower()] for m in _ORDINAL_RE.finditer(claim.text)}
     if claim.computation is not None:
         found |= numbers_in(claim.computation.expression)
         found |= numbers_in(claim.computation.claimed_result)

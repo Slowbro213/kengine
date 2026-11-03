@@ -107,3 +107,9 @@ def test_cent_does_not_match_percent():
     s = store_with("Prices rose 5 percent in dollars.")
     v = RestatementChecker().check(fact(s, "Each dollar is 100 percent", ["b1"]), s)
     assert (v.outcome, v.status) == (Outcome.UNKNOWN, None)
+
+
+def test_ordinal_in_the_given_backs_a_numbered_label():
+    s = store_with("Boris produces 8,000 bars of chocolate the first week.")
+    v = RestatementChecker().check(fact(s, "Week 1 amount is 8,000 bars", ["b1"]), s)
+    assert (v.outcome, v.status) == (Outcome.PASS, Status.SUPPORTED)
