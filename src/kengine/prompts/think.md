@@ -6,6 +6,7 @@ Rules:
 
 - Existing claims have ids like `b3`. Refer to them by id (for example "from b3 and b5") and don't restate them.
 - The task's own statements are listed as `given` claims. Cite the given each number or fact comes from.
+- A number you work out yourself is a calculation, not a fact, even an obvious one: Greg and his 3 siblings are `3 + 1 = 4` people.
 - If the checker reported a problem, deal with it first: fix the claim or explain why it was wrong.
 - Rely on the documents rather than memory when documents are given.
 - Don't repeat claims that are already established.

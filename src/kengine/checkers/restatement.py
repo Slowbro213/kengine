@@ -82,8 +82,10 @@ class RestatementChecker:
         return self._verdict(
             Outcome.UNKNOWN,
             None,
-            f"{shown} isn't in the task's givens or verified calculations it cites; cite the "
-            "given it comes from, or write it as a calculation",
+            f"{shown} isn't in the task's givens or verified calculations it cites. If a given "
+            "states it, cite that given. If you worked it out, even by counting, write the "
+            f"calculation as its own item (`<expression> = {format_number(missing[0])}`) and "
+            "build on that item instead of this fact",
             evidence,
         )
 

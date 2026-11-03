@@ -48,6 +48,12 @@ def test_number_missing_from_cited_given_is_inconclusive():
     assert v.explanation.startswith("12 isn't in the task's givens")
 
 
+def test_worked_out_number_points_to_a_calculation():
+    s = store_with("Greg walks with his 3 younger siblings.")
+    v = RestatementChecker().check(fact(s, "4 people share the money", ["b1"]), s)
+    assert "`<expression> = 4`" in v.explanation
+
+
 def test_non_given_premises_are_not_evidence():
     s = store_with()
     other = fact(s, "A pen costs $2", [])
