@@ -82,11 +82,17 @@ _ORDINALS = {
     )
 }
 _ORDINAL_RE = re.compile(r"\b(" + "|".join(_ORDINALS) + r")\b", re.IGNORECASE)
+# Claim ids such as `b3` or `c2`, which a claim's text may cite; their digits aren't numbers.
+_ID_RE = re.compile(r"\b[bc]\d+\b")
+
+
+def _stated(text: str) -> set[Fraction]:
+    return numbers_in(_ID_RE.sub(" ", text))
 
 
 def _numbers(rec: BeliefRecord) -> set[Fraction]:
     claim = rec.claim
-    found = numbers_in(claim.text)
+    found = _stated(claim.text)
     found |= {_ORDINALS[m.group(1).lower()] for m in _ORDINAL_RE.finditer(claim.text)}
     if claim.computation is not None:
         found |= numbers_in(claim.computation.expression)
@@ -105,10 +111,10 @@ class RestatementChecker:
     kind = CheckerKind.EVIDENCE
 
     def applies_to(self, claim: Claim) -> bool:
-        return claim.type == ClaimType.FACT and bool(numbers_in(claim.text))
+        return claim.type == ClaimType.FACT and bool(_stated(claim.text))
 
     def check(self, claim: Claim, view: BeliefView) -> Verdict:
-        wanted = numbers_in(claim.text)
+        wanted = _stated(claim.text)
         if claim.premises:
             cited = [r for r in (view.get(p) for p in claim.premises) if _citable(r)]
             have: set[Fraction] = set()

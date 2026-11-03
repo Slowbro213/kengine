@@ -113,3 +113,13 @@ def test_ordinal_in_the_given_backs_a_numbered_label():
     s = store_with("Boris produces 8,000 bars of chocolate the first week.")
     v = RestatementChecker().check(fact(s, "Week 1 amount is 8,000 bars", ["b1"]), s)
     assert (v.outcome, v.status) == (Outcome.PASS, Status.SUPPORTED)
+
+
+def test_claim_ids_in_the_text_are_not_numbers():
+    checker = RestatementChecker()
+    s = store_with("All dogs are mammals.")
+    claim = fact(s, "The rule from b1 applies to any dog", ["b1"])
+    assert not checker.applies_to(claim)
+    s2 = store_with("Rex weighs 30 kg.")
+    v = checker.check(fact(s2, "Rex weighs 30 kg, per b1", ["b1"]), s2)
+    assert (v.outcome, v.status) == (Outcome.PASS, Status.SUPPORTED)
