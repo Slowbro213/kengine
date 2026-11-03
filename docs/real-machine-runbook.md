@@ -88,3 +88,22 @@ M1 has the structure and arithmetic checkers, plus the restatement checker descr
 - The prompt examples now end with the answer resting on the calculation, not on a restating inference, which nothing in M1 can check.
 
 `supported` passes the `standard` gate but not `strict`. The check is lexical: a fact that cites the right given but uses a number from another of the givens it cites can pass. It's recorded in the verdict's evidence for audit.
+
+## Checkpoint C (logic checker, owner review point 2)
+
+Run these inside `nix-shell` on NixOS, with the server from Setup step 4 running. M2 adds the formal fragment, the z3 `logic` checker and formalization of the task's givens (`[logic]` in the config).
+
+1. **Size the runs.** `uv run kengine eval folio --solver kengine --size smoke --profile quick`, then `--profile standard`. Let `t` be the two runs' `mean_wall_s` added together. Then `N = min(100, floor(36000 / t / 10) * 10)`, and at least 10: a 10-hour budget for step 2.
+2. **Main runs.** `uv run kengine eval folio --solver kengine --size small --profile quick --limit N`, then `--profile standard`. Leave out `--limit` when N is 100. `--limit` takes the first N items of the seeded sample and adds `-firstN` to the results directory name.
+3. **Arithmetic regression.** Formalization is on for every suite, so rerun `uv run kengine eval gsm8k --solver kengine --size smoke` under `quick` and `standard`. Compare each run with its Checkpoint B counterpart: `uv run kengine eval-compare <checkpoint B dir> <new dir>`.
+4. **Compare with the baseline.** For each folio run, `uv run kengine eval-compare <baseline folio small dir> <run dir>`. The baseline dir is the Checkpoint A one (`ls eval/results`). The comparison covers only the items both runs have and is written to `<run dir>/compare-<base>.json`.
+5. **Write `eval/results/CHECKPOINT-C.md`** with:
+   - setup: commit, server command, the chosen formal syntax (from the Task 7 probe), N and why
+   - the probe summaries for both syntaxes and the decision
+   - a results table per run (n, headline, abstention, answered accuracy, mean wall s/item, and the baseline's accuracy on the same items)
+   - with vs. without: fixed, broke, caught, false alarms, errors caught and false-alarm rate per profile
+   - a count of `logic` verdicts by outcome and status over all folio sessions, with the script that counted them
+   - 3 audit-trail excerpts from `events.jsonl`: one item kengine fixed, one it broke or falsely blocked, and one blocked by an informal inference
+   - the gsm8k regression against Checkpoint B
+   - insights for the owner: what M2 bought and cost on folio, whether formalization is reliable enough to rely on, what blocks most, and whether M3 or M5 should come next
+6. Commit everything under `eval/results/` except `sessions/` and push.
