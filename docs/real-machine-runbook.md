@@ -44,12 +44,14 @@ What the GPU machine runs and commits (spec §3). Everything here was run on the
    ~/.local/share/kengine/llama-cuda/bin/llama-server \
      -m ~/.local/share/kengine/models/Huihui-Qwen3.5-9B-abliterated.i1-Q4_K_M.gguf \
      -ngl 99 -c 32768 -np 1 -fa on -ctk q8_0 -ctv q8_0 \
-     --reasoning-format deepseek --host 127.0.0.1 --port 8080
+     --reasoning-format deepseek --spec-type ngram-mod --host 127.0.0.1 --port 8080
    ```
 
    - On the reference machine this uses 6.4 of 8 GB VRAM and generates about 67 tokens/s.
    - `-np 1` gives the one slot the whole 32k context; the eval runner sends one request at a time.
    - `--reasoning-format deepseek` returns the thinking in `reasoning_content`, which the backend reads. `--jinja` is the default in this version.
+   - `--spec-type ngram-mod` is speculative decoding that guesses the next tokens from text already seen. It doesn't change what the model generates. It speeds up output that repeats earlier text, such as the extraction samples (up to 2.5×), and leaves free thinking at the same speed. A draft model (Qwen3.5-0.8B, `-md`) was tried and made thinking slower, 47 tokens/s against 66: with this hybrid architecture, verifying a batch of drafted tokens costs about as much as generating them.
+   - The think role's `thinking_budget` is sent per request as `thinking_budget_tokens`. When it runs out, the server closes the thinking block after a short wrap-up message, and the model writes its answer in the remaining `max_tokens`. It needs a llama.cpp build with per-request reasoning budgets (0.8.0 build 11960 has them).
    - Check that the server really is on the GPU: `nvidia-smi` should show about 6 GB in use, and the log must not say `failed to initialize CUDA`.
    - Flags change between llama.cpp versions. Check them against `llama-server --help`, and record the exact command in the checkpoint summary.
    - If llama.cpp refuses the Qwen3.5 architecture, use standard Qwen3-8B (spec §3), change only the config, and record it.
@@ -92,6 +94,8 @@ M1 has the structure and arithmetic checkers, plus the restatement checker descr
 ## Checkpoint C (logic checker, owner review point 2)
 
 Run these inside `nix-shell` on NixOS, with the server from Setup step 4 running. M2 adds the formal fragment, the z3 `logic` checker and formalization of the task's givens (`[logic]` in the config).
+
+A results directory is named by date, suite, solver, size and profile, and `eval` resumes into an existing one by skipping the items it already has. If Checkpoint B ran on the same day, add `--out eval/results/checkpoint-c` to every `eval` below so the runs don't land in Checkpoint B's directories.
 
 1. **Size the runs.** `uv run kengine eval folio --solver kengine --size smoke --profile quick`, then `--profile standard`. Let `t` be the two runs' `mean_wall_s` added together. Then `N = min(100, floor(36000 / t / 10) * 10)`, and at least 10: a 10-hour budget for step 2.
 2. **Main runs.** `uv run kengine eval folio --solver kengine --size small --profile quick --limit N`, then `--profile standard`. Leave out `--limit` when N is 100. `--limit` takes the first N items of the seeded sample and adds `-firstN` to the results directory name.

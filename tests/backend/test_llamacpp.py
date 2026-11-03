@@ -81,7 +81,23 @@ def test_complete_sends_sampling_and_thinking_flag() -> None:
     assert body["max_tokens"] == 512
     assert body["chat_template_kwargs"] == {"enable_thinking": True}
     assert "response_format" not in body
+    assert "thinking_budget_tokens" not in body
     assert c.usage.prompt_tokens == 11 and c.usage.completion_tokens == 7
+
+
+def test_thinking_budget_is_sent_with_a_wrap_up_message() -> None:
+    cap = Capture(chat_response("x"))
+    make(cap).complete(MSGS, THINK.model_copy(update={"thinking_budget": 300}))
+    body = cap.body()
+    assert body["thinking_budget_tokens"] == 300
+    assert "Working" in body["reasoning_budget_message"]
+
+
+def test_thinking_budget_is_ignored_when_thinking_is_off() -> None:
+    cap = Capture(chat_response("x"))
+    role = THINK.model_copy(update={"thinking": False, "thinking_budget": 300})
+    make(cap).complete(MSGS, role)
+    assert "thinking_budget_tokens" not in cap.body()
 
 
 def test_reasoning_content_returned_separately() -> None:

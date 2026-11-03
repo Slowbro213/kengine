@@ -21,8 +21,10 @@ def test_defaults_match_model_card() -> None:
     e = cfg.roles.extract
     assert e.thinking is False and e.sampling.temperature == 0.3
     assert e.sampling.presence_penalty == 0.0
+    assert t.max_tokens == 16384 and t.thinking_budget == 12288
+    # The baseline thinks unbounded, as in Checkpoint A.
     assert cfg.roles.baseline == cfg.roles.think.model_copy(
-        update={"max_tokens": cfg.eval.token_budget_per_task}
+        update={"max_tokens": cfg.eval.token_budget_per_task, "thinking_budget": None}
     )
     assert cfg.context.step_prompt_tokens == 14000
     assert cfg.eval.token_budget_per_task == 32768

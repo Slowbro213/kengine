@@ -27,6 +27,9 @@ class RoleConfig(BaseModel):
     sampling: SamplingParams
     thinking: bool
     max_tokens: int = Field(gt=0)
+    # Thinking tokens before the server closes the thinking block, leaving the rest of
+    # `max_tokens` for the answer. None: think until done or out of `max_tokens`.
+    thinking_budget: int | None = Field(default=None, gt=0)
 
 
 class Message(BaseModel):

@@ -59,6 +59,10 @@ class _Props(BaseModel):
     default_generation_settings: _GenSettings | None = None
 
 
+# Injected before the end-of-thinking tag when the thinking budget runs out.
+_WRAP_UP = "\n\nI'm out of thinking time; I'll write the Working section now with what I have.\n"
+
+
 def _finish_reason(raw: str | None) -> FinishReason:
     if raw == "stop":
         return "stop"
@@ -96,7 +100,7 @@ class LlamaCppBackend:
 
     def _body(self, messages: Sequence[Message], role: RoleConfig) -> dict[str, Any]:
         s = role.sampling
-        return {
+        body: dict[str, Any] = {
             "model": self._config.model,
             "messages": [m.model_dump() for m in messages],
             "temperature": s.temperature,
@@ -108,6 +112,10 @@ class LlamaCppBackend:
             "max_tokens": role.max_tokens,
             "chat_template_kwargs": {"enable_thinking": role.thinking},
         }
+        if role.thinking and role.thinking_budget is not None:
+            body["thinking_budget_tokens"] = role.thinking_budget
+            body["reasoning_budget_message"] = _WRAP_UP
+        return body
 
     def _chat(self, body: dict[str, Any]) -> Completion:
         data = self._post("/v1/chat/completions", body)

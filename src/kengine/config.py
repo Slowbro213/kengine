@@ -23,7 +23,11 @@ EXTRACT_SAMPLING = SamplingParams(
 
 
 def _think_role() -> RoleConfig:
-    return RoleConfig(sampling=THINK_SAMPLING, thinking=True, max_tokens=16384)
+    # Thinking stops at 12288 tokens, leaving 4096 for the Working section, so a long think
+    # isn't cut off before it states any claims.
+    return RoleConfig(
+        sampling=THINK_SAMPLING, thinking=True, max_tokens=16384, thinking_budget=12288
+    )
 
 
 def _extract_role() -> RoleConfig:
@@ -121,7 +125,8 @@ class KengineConfig(BaseModel):
             )
         else:
             budget = EvalConfig().token_budget_per_task
-        derived = {**think_dict, "max_tokens": budget}
+        # The baseline thinks unbounded within the task budget, as in Checkpoint A.
+        derived = {**think_dict, "max_tokens": budget, "thinking_budget": None}
         roles_raw["baseline"] = deep_merge(derived, roles_raw.get("baseline") or {})
         return {**raw, "roles": roles_raw}
 

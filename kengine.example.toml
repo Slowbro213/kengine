@@ -24,6 +24,7 @@ formalize_givens = true                # translate the task's givens into the fo
 [roles.think]                          # free-text reasoning, thinking mode
 thinking = true
 max_tokens = 16384
+thinking_budget = 12288                # the server ends thinking here; the rest is for the answer
 [roles.think.sampling]
 temperature = 1.0
 top_p = 0.95
