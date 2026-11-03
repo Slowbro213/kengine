@@ -20,6 +20,7 @@ For a `fact` or `inference` that's a logical statement about the problem's indiv
 - Reuse the names in the existing claims' `formal:` forms. Invent a new name only for something new.
 - An `inference`'s `premises` must list every claim it follows from.
 - If the reasoning says the premises settle a statement neither way, record that statement with `"mode": "undetermined"`. Otherwise use `"mode": "holds"`.
+- An item that rates the task's conclusion ("the conclusion is True", "so the answer is False", "it's Uncertain") is a statement of the conclusion itself: formalize the conclusion for True, its negation for False, and the conclusion with `"mode": "undetermined"` for Uncertain. Never use `true` or `false` as a name.
 - Leave `formal` out when the item doesn't fit the language. Never force it.
 
 For example, the item "Rex is a mammal (from b1 and b2)" becomes {"ref": "c1", "type": "inference", "text": "Rex is a mammal", "premises": ["b1", "b2"], "formal": {formal_example}}.
