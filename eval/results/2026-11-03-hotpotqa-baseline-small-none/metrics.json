@@ -1,0 +1,15 @@
+{
+  "suite": "hotpotqa",
+  "solver": "baseline",
+  "n": 100,
+  "headline_accuracy": 0.65,
+  "abstention_rate": 0.0,
+  "answered_accuracy": 0.65,
+  "status_counts": {
+    "answered": 100
+  },
+  "mean_model_calls": 1.0,
+  "mean_prompt_tokens": 1491.65,
+  "mean_completion_tokens": 2361.42,
+  "mean_wall_s": 37.25694942869988
+}

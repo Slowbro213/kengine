@@ -1,0 +1,25 @@
+{"item_id": "hotpotqa-5ab66b63554299110f219a0a", "labels": ["other"], "note": "Scoring, not a model error: exact match fails on 'Fox hunting' vs gold 'hunting' (more specific, and correct)."}
+{"item_id": "hotpotqa-5a7982435542994bb945701f", "labels": ["other"], "note": "Gold looks truncated: the documents give the formal name as 'Folkets Hus', which is what the model answered."}
+{"item_id": "hotpotqa-5ade99ad554299728e26c75d", "labels": ["other"], "note": "Scoring, not a model error: exact match fails on 'two or three' vs 'two or three acts'."}
+{"item_id": "hotpotqa-5a7905f555429974737f7947", "labels": ["other"], "note": "Scoring, not a model error: exact match fails on 'The second largest city' vs 'second largest'."}
+{"item_id": "hotpotqa-5a74760b55429974ef308c03", "labels": ["other"], "note": "Gold is wrong: Mozart (1756) was born before Spontini (1774). The model is right and cites both dates."}
+{"item_id": "hotpotqa-5a7de14a5542991319bc93fc", "labels": ["other"], "note": "Scoring, not a model error: exact match fails on 'Jeffersontown' vs 'Jeffersontown, Kentucky'."}
+{"item_id": "hotpotqa-5a8367c1554299334474600e", "labels": ["other"], "note": "Scoring, not a model error: exact match fails on 'Bayern Munich' vs 'Bayern Munich of West Germany'."}
+{"item_id": "hotpotqa-5ae356045542990afbd1e10d", "labels": ["other"], "note": "Gold is broken (a sentence about the player, not a city). 'Cincinnati' (drafted by the Bengals) is defensible; Eugene (Oregon) might also be intended."}
+{"item_id": "hotpotqa-5ae4957155429970de88d9bc", "labels": ["other"], "note": "Scoring, not a model error: exact match fails on 'Peter Yates' vs 'Peter James Yates'."}
+{"item_id": "hotpotqa-5abb2a5f5542996cc5e49fca", "labels": ["other"], "note": "Scoring, not a model error: exact match fails on 'The Ansonia' vs 'The Ansonia Hotel'."}
+{"item_id": "hotpotqa-5ab21682554299722f9b4ca9", "labels": ["other"], "note": "Scoring, not a model error: exact match fails on '15 September 1960' vs 'born 15 September 1960'."}
+{"item_id": "hotpotqa-5ae6316d5542996de7b71b87", "labels": ["other"], "note": "Scoring, not a model error: exact match fails on a common name: 'Ricky Rubio' vs full name 'Ricard Rubio i Vives'."}
+{"item_id": "hotpotqa-5ac4f42b55429924173fb50d", "labels": ["other"], "note": "Scoring, not a model error: exact match fails on the plural: 'Flaming beverage' vs 'Flaming beverages'."}
+{"item_id": "hotpotqa-5a74a26a55429979e28829d6", "labels": ["other"], "note": "Scoring, not a model error: exact match fails on 'Béla Bartók' vs full name 'Béla Viktor János Bartók'."}
+{"item_id": "hotpotqa-5a8b56d655429949d91db557", "labels": ["other"], "note": "Scoring, not a model error: exact match fails on 'Nickelodeon on Sunset' vs short form 'Nick on Sunset'."}
+{"item_id": "hotpotqa-5ab7d33d5542992aa3b8c859", "labels": ["other"], "note": "Scoring, not a model error: exact match fails on 'Don Johnson' vs full name 'Donald Wayne Johnson'."}
+{"item_id": "hotpotqa-5adbd1d25542994650320bf6", "labels": ["other"], "note": "Scoring, not a model error: exact match fails on 'coach and choreographer' vs a full-sentence gold."}
+{"item_id": "hotpotqa-5a8d75f35542994ba4e3dc8b", "labels": ["other"], "note": "Scoring, not a model error: exact match fails on 'Pendlebury' vs 'Pendlebury, Lancashire'."}
+{"item_id": "hotpotqa-5ab4da5b55429942dd415f96", "labels": ["format_failure"], "note": "Yes/no question answered with the two band names ('Nightwish and Cake'). The reasoning reached 'different bands' but never said 'no'."}
+{"item_id": "hotpotqa-5adebc51554299728e26c799", "labels": ["other"], "note": "Defensible: Doc 2 says Holmes sang in 'the Bruce Springsteen Band' with Tallent; gold uses its later name, 'E Street Band', from Doc 8. The model considered both."}
+{"item_id": "hotpotqa-5ac0a18a5542992a796ded41", "labels": ["other"], "note": "Scoring, not a model error: exact match fails on 'Romance' vs 'romance genre'."}
+{"item_id": "hotpotqa-5a7f7ca25542994857a76747", "labels": ["other"], "note": "Scoring, not a model error: exact match fails on 'First season' vs 'first'."}
+{"item_id": "hotpotqa-5ab28a87554299449642c8ec", "labels": ["other"], "note": "Scoring, not a model error: exact match fails on '2011 Pulitzer Prize in General Nonfiction' vs 'Pulitzer Prize'."}
+{"item_id": "hotpotqa-5ae72c7d5542991e8301cb91", "labels": ["misread_question"], "note": "'Later than which' asks for the version FileVault started in (10.3, per Doc 10); the model answered the upper bound from Doc 3 (Snow Leopard). It even considered 10.3."}
+{"item_id": "hotpotqa-5a81418455429903bc27b95f", "labels": ["other"], "note": "Scoring, not a model error: exact match fails on 'Barbara Bush (née Pierce)' vs 'Barbara Bush'."}
