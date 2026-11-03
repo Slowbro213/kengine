@@ -1,0 +1,16 @@
+{
+  "suite": "folio",
+  "solver": "baseline",
+  "n": 100,
+  "headline_accuracy": 0.46,
+  "abstention_rate": 0.16,
+  "answered_accuracy": 0.5476190476190477,
+  "status_counts": {
+    "partial": 16,
+    "answered": 84
+  },
+  "mean_model_calls": 1.0,
+  "mean_prompt_tokens": 212.31,
+  "mean_completion_tokens": 19613.83,
+  "mean_wall_s": 320.71896118155985
+}

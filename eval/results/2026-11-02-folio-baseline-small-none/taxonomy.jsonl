@@ -1,0 +1,25 @@
+{"item_id": "folio-tasksource-1209", "labels": ["truncated"], "note": "Ran out of the 32k budget enumerating James's lunch states; no answer."}
+{"item_id": "folio-tasksource-1301", "labels": ["invalid_inference"], "note": "Picks the 'from Earth and Mars' branch of the disjunction as Marvin's 'primary state' and concludes alien; never shows the other branch forces it."}
+{"item_id": "folio-tasksource-928", "labels": ["truncated"], "note": "Budget ran out; the excerpt is deeply nested, drifting re-checks."}
+{"item_id": "folio-tasksource-904", "labels": ["invalid_inference"], "note": "Treats the antecedent of P5 ('if 1984 is a streaming service') as given and concludes printed text."}
+{"item_id": "folio-tasksource-1273", "labels": ["invalid_inference"], "note": "Misses that Ted being an alligator rules out Brown Swiss (so the conditional holds vacuously); reasons about a 'domestic alligator' and says Uncertain."}
+{"item_id": "folio-tasksource-981", "labels": ["invalid_inference"], "note": "Treats the consequent of premise 7's conditional ('neither picky...') as established. The premises are arguably inconsistent (P1 + P7), which may explain the gold False."}
+{"item_id": "folio-tasksource-806", "labels": ["truncated"], "note": "Thinking collapsed into long runs of whitespace and used up the budget."}
+{"item_id": "folio-tasksource-807", "labels": ["invalid_inference"], "note": "Converse error: spicy and mala hotpots are spicy, so 'the chilies are a mala hotpot'; cites 'the consensus on this specific riddle'."}
+{"item_id": "folio-tasksource-173", "labels": ["invalid_inference"], "note": "Converse error: reading->knowledge->smarter taken to mean any smarter person gained knowledge."}
+{"item_id": "folio-tasksource-547", "labels": ["invalid_inference"], "note": "Shows MT is a generation task, then calls 'understanding' True by reading 'either...or' as allowing both."}
+{"item_id": "folio-tasksource-934", "labels": ["invalid_inference"], "note": "Circular: assumes the club is a private company ('as asserted') to conclude it is one; ignores P6, which rules it out."}
+{"item_id": "folio-tasksource-1012", "labels": ["truncated"], "note": "Budget ran out tracing the sibling/strangers chain; no answer."}
+{"item_id": "folio-tasksource-1013", "labels": ["truncated"], "note": "Budget ran out; the visible reply stops after one line."}
+{"item_id": "folio-tasksource-787", "labels": ["invalid_inference"], "note": "Concludes John's car is a Solo EV because that is 'consistent with' P5; consistency taken as entailment."}
+{"item_id": "folio-tasksource-1348", "labels": ["truncated"], "note": "Budget ran out circling the monkey/bird partition (also failed this way in the smoke run)."}
+{"item_id": "folio-tasksource-847", "labels": ["truncated"], "note": "Budget ran out looping over P3/P5; no answer."}
+{"item_id": "folio-tasksource-849", "labels": ["truncated"], "note": "Budget ran out re-tracing P5/P6 (also failed this way in the smoke run)."}
+{"item_id": "folio-tasksource-580", "labels": ["invalid_inference"], "note": "Recognises the duster is a non-sucking appliance (a counterexample) but answers Uncertain instead of False."}
+{"item_id": "folio-tasksource-389", "labels": ["invalid_inference"], "note": "Labeled data required and unsupervised needs none, with RL excluded; still answers Uncertain instead of False."}
+{"item_id": "folio-tasksource-1328", "labels": ["invalid_inference"], "note": "Shows 'Hachi is in Frozen' is consistent with the premises and calls the conclusion True; consistency taken as entailment."}
+{"item_id": "folio-tasksource-1244", "labels": ["other"], "note": "Premises 6 and 7 contradict each other (James works in the lab / doesn't work in the lab). The model's reasoning is also wrong, but the item itself is broken."}
+{"item_id": "folio-tasksource-442", "labels": ["invalid_inference"], "note": "Susan arrives at LGA and departure != arrival, so she can't depart LGA (False); the model hedges to Uncertain."}
+{"item_id": "folio-tasksource-443", "labels": ["invalid_inference"], "note": "John departs LGA so can't arrive there (False); the model says True, treating LGA as 'the key variable'."}
+{"item_id": "folio-tasksource-190", "labels": ["invalid_inference"], "note": "Family Secrets is a podcast and no podcast is a novel (False); the model answers Uncertain."}
+{"item_id": "folio-tasksource-412", "labels": ["invalid_inference"], "note": "From 'one person in the tie is Belgian' and 'Descampe is Belgian' concludes Descampe is that person (also failed this way in the smoke run)."}
