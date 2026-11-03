@@ -1,0 +1,68 @@
+{
+  "suite": "gsm8k",
+  "solver": "kengine",
+  "size": "smoke",
+  "profile": "quick",
+  "seed": 0,
+  "n_items": 10,
+  "git_commit": "3659c9a",
+  "backend": {
+    "kind": "llamacpp",
+    "base_url": "http://127.0.0.1:8080",
+    "model": "qwen3.5-9b",
+    "timeout_s": 600.0
+  },
+  "loaded_model": "Huihui-Qwen3.5-9B-abliterated.i1-Q4_K_M.gguf",
+  "n_ctx": 32768,
+  "roles": {
+    "think": {
+      "sampling": {
+        "temperature": 1.0,
+        "top_p": 0.95,
+        "top_k": 20,
+        "min_p": 0.0,
+        "presence_penalty": 1.5,
+        "repetition_penalty": 1.0
+      },
+      "thinking": true,
+      "max_tokens": 8192
+    },
+    "extract": {
+      "sampling": {
+        "temperature": 0.3,
+        "top_p": 0.8,
+        "top_k": 20,
+        "min_p": 0.0,
+        "presence_penalty": 0.0,
+        "repetition_penalty": 1.0
+      },
+      "thinking": false,
+      "max_tokens": 4096
+    },
+    "critic": {
+      "sampling": {
+        "temperature": 0.2,
+        "top_p": 0.8,
+        "top_k": 20,
+        "min_p": 0.0,
+        "presence_penalty": 0.0,
+        "repetition_penalty": 1.0
+      },
+      "thinking": false,
+      "max_tokens": 4096
+    },
+    "baseline": {
+      "sampling": {
+        "temperature": 1.0,
+        "top_p": 0.95,
+        "top_k": 20,
+        "min_p": 0.0,
+        "presence_penalty": 1.5,
+        "repetition_penalty": 1.0
+      },
+      "thinking": true,
+      "max_tokens": 32768
+    }
+  },
+  "token_budget_per_task": 32768
+}
