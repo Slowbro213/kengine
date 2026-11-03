@@ -48,6 +48,12 @@ def test_number_missing_from_cited_given_is_inconclusive():
     assert v.explanation.startswith("12 isn't in the task's givens")
 
 
+def test_worked_out_number_points_to_a_calculation():
+    s = store_with("Greg walks with his 3 younger siblings.")
+    v = RestatementChecker().check(fact(s, "4 people share the money", ["b1"]), s)
+    assert "`<expression> = 4`" in v.explanation
+
+
 def test_non_given_premises_are_not_evidence():
     s = store_with()
     other = fact(s, "A pen costs $2", [])
@@ -76,3 +82,34 @@ def test_uncited_fact_needs_one_given_with_its_numbers_and_a_shared_word():
     assert checker.check(fact(s, "A pen costs $1.25", []), s).evidence == ["b1"]
     # 12 is in b2, but b2 is about apples, not pens.
     assert checker.check(fact(s, "There are 12 pens", []), s).status is None
+
+
+def test_unit_conversion_counts_when_both_units_are_named():
+    s = store_with("How many badges does Wendy earn in a 1 year time frame?")
+    v = RestatementChecker().check(fact(s, "The time frame is 12 months", ["b1"]), s)
+    assert (v.outcome, v.status) == (Outcome.PASS, Status.SUPPORTED)
+    assert v.explanation == "restates b1, with 1 year = 12 months"
+
+
+def test_unit_conversion_needs_the_other_unit():
+    s = store_with("Claire earns 1 badge every month.")
+    v = RestatementChecker().check(fact(s, "She earns 12 badges in 12 months", ["b1"]), s)
+    assert (v.outcome, v.status) == (Outcome.UNKNOWN, None)
+
+
+def test_unit_conversion_backs_an_uncited_fact():
+    s = store_with("A movie lasts 2 hours.")
+    v = RestatementChecker().check(fact(s, "An hour has 60 minutes and the movie 2 hours", []), s)
+    assert (v.outcome, v.status, v.evidence) == (Outcome.PASS, Status.SUPPORTED, ["b1"])
+
+
+def test_cent_does_not_match_percent():
+    s = store_with("Prices rose 5 percent in dollars.")
+    v = RestatementChecker().check(fact(s, "Each dollar is 100 percent", ["b1"]), s)
+    assert (v.outcome, v.status) == (Outcome.UNKNOWN, None)
+
+
+def test_ordinal_in_the_given_backs_a_numbered_label():
+    s = store_with("Boris produces 8,000 bars of chocolate the first week.")
+    v = RestatementChecker().check(fact(s, "Week 1 amount is 8,000 bars", ["b1"]), s)
+    assert (v.outcome, v.status) == (Outcome.PASS, Status.SUPPORTED)

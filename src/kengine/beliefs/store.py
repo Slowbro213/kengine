@@ -12,7 +12,7 @@ from pydantic import BaseModel, ConfigDict
 from kengine.beliefs.records import BeliefRecord
 from kengine.beliefs.status import TERMINAL, Status
 from kengine.checkers.base import CheckerKind, Verdict
-from kengine.claims.schema import Claim, ClaimType, Computation, Source
+from kengine.claims.schema import Claim, ClaimType, Computation, Formal, Source
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS beliefs (
@@ -116,6 +116,7 @@ class BeliefStore:
         step: int,
         computation: Computation | None = None,
         confidence: float | None = None,
+        formal: Formal | None = None,
     ) -> Claim:
         missing = [p for p in premises if p not in self._records]
         if missing:
@@ -126,6 +127,7 @@ class BeliefStore:
             text=text,
             premises=tuple(premises),
             computation=computation,
+            formal=formal,
             confidence=confidence,
             source=source,
             step=step,

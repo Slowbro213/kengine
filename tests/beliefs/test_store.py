@@ -5,7 +5,7 @@ import pytest
 from kengine.beliefs.status import Status
 from kengine.beliefs.store import BeliefStore, UnknownPremiseError, VerificationGuardError
 from kengine.checkers.base import CheckerKind, Outcome, Verdict
-from kengine.claims.schema import ClaimType, Computation, Source, SourceKind
+from kengine.claims.schema import ClaimType, Computation, Formal, Source, SourceKind
 
 SRC = Source(kind=SourceKind.MODEL)
 
@@ -136,3 +136,20 @@ def test_reopen_restores_state(tmp_path: Path):
     assert [c.belief_id for c in s2.history("b2")] == ["b2"]
     assert s2.dependents("b1") == ["b2", "b3"]
     assert s2.add(type=ClaimType.FACT, text="e", premises=[], source=SRC, step=3).id == "b5"
+
+
+def test_add_with_formal_persists(tmp_path: Path):
+    path = tmp_path / "b.sqlite"
+    s = BeliefStore.open(path)
+    s.add(
+        type=ClaimType.GIVEN,
+        text="Rex is a dog",
+        premises=[],
+        source=Source(kind=SourceKind.TASK),
+        step=0,
+        formal=Formal(statements=("dog(rex)",)),
+    )
+    s.close()
+    again = BeliefStore.open(path)
+    formal = again.get("b1").claim.formal
+    assert formal is not None and formal.statements == ("dog(rex)",)

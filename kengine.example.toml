@@ -16,10 +16,14 @@ step_prompt_tokens = 14000             # token budget for each step's assembled 
 [eval]
 token_budget_per_task = 32768          # completion tokens per eval item (baseline and kengine)
 
+[logic]
+syntax = "text"                        # how the model writes formal forms: text | json
+formalize_givens = true                # translate the task's givens into the formal fragment
+
 # Model roles. Sampling defaults follow the Qwen3.5 model card.
 [roles.think]                          # free-text reasoning, thinking mode
 thinking = true
-max_tokens = 8192
+max_tokens = 16384
 [roles.think.sampling]
 temperature = 1.0
 top_p = 0.95
@@ -32,6 +36,17 @@ repetition_penalty = 1.0
 thinking = false
 max_tokens = 4096
 [roles.extract.sampling]
+temperature = 0.3
+top_p = 0.8
+top_k = 20
+min_p = 0.0
+presence_penalty = 0.0
+repetition_penalty = 1.0
+
+[roles.formalize]                      # translates the task's givens into the formal fragment
+thinking = false
+max_tokens = 4096
+[roles.formalize.sampling]
 temperature = 0.3
 top_p = 0.8
 top_k = 20

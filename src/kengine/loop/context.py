@@ -14,9 +14,10 @@ from kengine.backend.types import Message
 from kengine.beliefs.records import BeliefRecord
 from kengine.beliefs.status import TERMINAL, Status
 from kengine.checkers.base import BeliefView
+from kengine.claims.formal import FormalSyntax
 from kengine.claims.schema import ClaimType
 from kengine.loop.task import Task
-from kengine.prompts import load_prompt
+from kengine.prompts import load_prompt, system_prompt
 
 HISTORY_STEPS = 5
 
@@ -53,6 +54,9 @@ def belief_line(rec: BeliefRecord) -> str:
     line = f"{claim.id} [{rec.status}] ({claim.type}) {claim.text}"
     if claim.computation is not None:
         line += f" :: {claim.computation.expression} = {claim.computation.claimed_result}"
+    if claim.formal is not None:
+        label = "formal" if claim.formal.mode == "holds" else f"formal ({claim.formal.mode})"
+        line += f" :: {label}: {'; '.join(claim.formal.statements)}"
     return line
 
 
@@ -165,9 +169,13 @@ def assemble_think_context(
 
 
 def assemble_extract_context(
-    view: BeliefView, think_text: str, budget_tokens: int, count_tokens: TokenCounter
+    view: BeliefView,
+    think_text: str,
+    budget_tokens: int,
+    count_tokens: TokenCounter,
+    syntax: FormalSyntax = "text",
 ) -> StepContext:
-    system = load_prompt("extract")
+    system = system_prompt("extract", syntax)
     reasoning = _section("Reasoning to convert", [think_text])
     budget = _Budget(budget_tokens, count_tokens, [system, reasoning])
     live = [r for r in view.all() if r.status not in TERMINAL]

@@ -10,6 +10,7 @@ from typing import Any, Literal, cast
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from kengine.backend.types import RoleConfig, SamplingParams
+from kengine.claims.formal import FormalSyntax
 
 # Qwen3.5 model card: thinking mode for general tasks.
 THINK_SAMPLING = SamplingParams(
@@ -22,7 +23,7 @@ EXTRACT_SAMPLING = SamplingParams(
 
 
 def _think_role() -> RoleConfig:
-    return RoleConfig(sampling=THINK_SAMPLING, thinking=True, max_tokens=8192)
+    return RoleConfig(sampling=THINK_SAMPLING, thinking=True, max_tokens=16384)
 
 
 def _extract_role() -> RoleConfig:
@@ -52,6 +53,8 @@ class RolesConfig(BaseModel):
     think: RoleConfig = Field(default_factory=_think_role)
     extract: RoleConfig = Field(default_factory=_extract_role)
     critic: RoleConfig = Field(default_factory=_critic_role)
+    # Translates the task's givens into the formal fragment (M2).
+    formalize: RoleConfig = Field(default_factory=_extract_role)
     # Filled in by KengineConfig: a copy of `think` with the eval token budget.
     baseline: RoleConfig = Field(default_factory=_think_role)
 
@@ -68,6 +71,13 @@ class EvalConfig(BaseModel):
     token_budget_per_task: int = Field(default=32768, gt=0)
 
 
+class LogicConfig(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    syntax: FormalSyntax = "text"  # set from the Checkpoint C probe (spec §9)
+    formalize_givens: bool = True
+
+
 class KengineConfig(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -75,6 +85,7 @@ class KengineConfig(BaseModel):
     roles: RolesConfig = Field(default_factory=RolesConfig)
     context: ContextConfig = Field(default_factory=ContextConfig)
     eval: EvalConfig = Field(default_factory=EvalConfig)
+    logic: LogicConfig = Field(default_factory=LogicConfig)
     data_dir: Path = Field(default_factory=lambda: Path.home() / ".local/share/kengine")
     default_profile: str = "standard"
 

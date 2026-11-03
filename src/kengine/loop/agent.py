@@ -16,6 +16,7 @@ from kengine.audit.events import (
     Event,
     ExtractionEvent,
     FeedbackEvent,
+    FormalizeEvent,
     GateEvent,
     ModelCallEvent,
     RunFinishedEvent,
@@ -37,8 +38,10 @@ from kengine.backend.types import (
 from kengine.beliefs.status import TERMINAL
 from kengine.beliefs.store import BeliefStore, StatusChange
 from kengine.checkers.base import Checker, Verdict
-from kengine.claims.extraction import ExtractedClaim, Extraction
-from kengine.claims.schema import ClaimType, Source, SourceKind
+from kengine.claims.extraction import ExtractedClaim, Extraction, to_formal
+from kengine.claims.formal import FormalSyntax
+from kengine.claims.formalize import Formalization, formalize_messages, read_formalization
+from kengine.claims.schema import ClaimType, Formal, Source, SourceKind
 from kengine.claims.voting import VoteResult, default_k, vote
 from kengine.config import RolesConfig
 from kengine.loop.context import (
@@ -127,6 +130,8 @@ class Agent:
         clock: Callable[[], float] = time.monotonic,
         sleep: Callable[[float], None] = time.sleep,
         retry_delay_s: float = 5.0,
+        formal_syntax: FormalSyntax = "text",
+        formalize_givens: bool = False,
     ) -> None:
         self.backend = backend
         self.roles = roles
@@ -138,6 +143,8 @@ class Agent:
         self.clock = clock
         self.sleep = sleep
         self.retry_delay_s = retry_delay_s
+        self.formal_syntax: FormalSyntax = formal_syntax
+        self.formalize_givens = formalize_givens
         self._reset()
 
     def _reset(self) -> None:
@@ -172,19 +179,47 @@ class Agent:
         return result
 
     def _seed_givens(self, task: Task) -> None:
-        """The task's statements become `given` claims b1, b2, ... before the first step.
-        One too long for a claim is left out; it's still in the task text."""
-        for i, text in enumerate(task.givens, 1):
-            if len(text) > MAX_GIVEN_CHARS:
-                continue
+        """The task's statements become `given` claims b1, b2, ... before the first step,
+        each with a formal form when FORMALIZE gives one. A statement too long for a claim
+        is left out; it's still in the task text."""
+        kept = [t for t in task.givens if len(t) <= MAX_GIVEN_CHARS]
+        formal = self._formalize(task, kept) if self.formalize_givens and kept else {}
+        for i, text in enumerate(kept, 1):
             claim = self.store.add(
                 type=ClaimType.GIVEN,
                 text=text,
                 premises=[],
                 source=Source(kind=SourceKind.TASK, ref=f"given:{i}"),
                 step=0,
+                formal=formal.get(i),
             )
             self._log(BeliefAddedEvent(step=0, claim=claim))
+
+    def _formalize(self, task: Task, statements: list[str]) -> dict[int, Formal]:
+        """One FORMALIZE call. Any failure leaves the givens informal; it never ends the run."""
+        messages = formalize_messages(task.goal, statements, self.formal_syntax)
+        for attempt in (1, 2):
+            t0 = self.clock()
+            try:
+                parsed, completion = self.backend.complete_structured(
+                    messages, self.roles.formalize, Formalization
+                )
+            except StructuredOutputError as e:
+                if e.completion is not None:
+                    self._record_call(messages, e.completion, "formalize", 0, t0)
+                self._log(FormalizeEvent(step=0, ok=False, raw=e.raw, errors=[str(e)]))
+                return {}
+            except BackendError as e:
+                if attempt == 1:
+                    self.sleep(self.retry_delay_s)
+                    continue
+                self._log(FormalizeEvent(step=0, ok=False, raw=None, errors=[str(e)]))
+                return {}
+            self._record_call(messages, completion, "formalize", 0, t0)
+            formal, errors = read_formalization(parsed, len(statements))
+            self._log(FormalizeEvent(step=0, ok=True, raw=completion.content, errors=errors))
+            return formal
+        return {}
 
     def _loop(self, task: Task) -> None:
         self._seed_givens(task)
@@ -228,7 +263,9 @@ class Agent:
         return completion.content
 
     def _extract(self, think_text: str, step: _Step) -> list[Extraction]:
-        ctx = assemble_extract_context(self.store, think_text, self.context_budget, approx_tokens)
+        ctx = assemble_extract_context(
+            self.store, think_text, self.context_budget, approx_tokens, self.formal_syntax
+        )
         samples, backend_failures = self._extract_round(ctx.messages, step)
         if not samples and backend_failures == self.profile.n_samples:
             self.sleep(self.retry_delay_s)
@@ -291,6 +328,12 @@ class Agent:
                     step.issues.append(f"{ready.ref} cited unknown {p}; link removed")
                 elif resolved not in premises:
                     premises.append(resolved)
+            formal: Formal | None = None
+            if ready.formal is not None:
+                try:
+                    formal = to_formal(ready.formal)
+                except ValueError as e:
+                    step.issues.append(f"{ready.ref}'s formal form was dropped: {e}")
             claim = self.store.add(
                 type=ClaimType(ready.type),
                 text=ready.text,
@@ -298,6 +341,7 @@ class Agent:
                 source=Source(kind=SourceKind.MODEL, ref=f"step:{step.n}"),
                 step=step.n,
                 computation=ready.computation,
+                formal=formal,
             )
             refs[ready.ref] = claim.id
             step.new_ids.append(claim.id)

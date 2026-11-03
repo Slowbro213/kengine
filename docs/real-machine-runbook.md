@@ -84,7 +84,26 @@ M1 has the structure and arithmetic checkers, plus the restatement checker descr
 **Task givens and the restatement checker** (added after Checkpoint A; owner left the design to the builder). In Checkpoint A's live `kengine run`, a correct, verified `1.25 * 12 = 15` was blocked. It rested on "each pen costs $1.25", which the model may only label `fact`, and nothing in M1 checks facts. The fix has three parts:
 
 - The task's statements are seeded as `given` claims (source `task`) before the first step: gsm8k question sentences, folio premises (never the conclusion), and the sentences of a `kengine run` task. hotpotqa documents are evidence, not givens, so none are seeded there.
-- The `restatement` checker (evidence kind) marks a numeric `fact` as `supported` when every number it states appears in what it cites, which must be givens or verified computations. An uncited fact can instead match a single given that has all its numbers and shares a word with it. Facts without numbers are untouched.
+- The `restatement` checker (evidence kind) marks a numeric `fact` as `supported` when every number it states appears in what it cites, which must be givens or verified computations. An uncited fact can instead match a single given that has all its numbers and shares a word with it. Facts without numbers are untouched. Standard unit conversions (12 months in a year, 60 minutes in an hour, 100 cents in a dollar and so on) count as stated when the fact names one unit and the fact or what it cites names the other; this was added after the first Checkpoint B smoke runs, where "1 year is 12 months" blocked a correct answer.
 - The prompt examples now end with the answer resting on the calculation, not on a restating inference, which nothing in M1 can check.
 
 `supported` passes the `standard` gate but not `strict`. The check is lexical: a fact that cites the right given but uses a number from another of the givens it cites can pass. It's recorded in the verdict's evidence for audit.
+
+## Checkpoint C (logic checker, owner review point 2)
+
+Run these inside `nix-shell` on NixOS, with the server from Setup step 4 running. M2 adds the formal fragment, the z3 `logic` checker and formalization of the task's givens (`[logic]` in the config).
+
+1. **Size the runs.** `uv run kengine eval folio --solver kengine --size smoke --profile quick`, then `--profile standard`. Let `t` be the two runs' `mean_wall_s` added together. Then `N = min(100, floor(36000 / t / 10) * 10)`, and at least 10: a 10-hour budget for step 2.
+2. **Main runs.** `uv run kengine eval folio --solver kengine --size small --profile quick --limit N`, then `--profile standard`. Leave out `--limit` when N is 100. `--limit` takes the first N items of the seeded sample and adds `-firstN` to the results directory name.
+3. **Arithmetic regression.** Formalization is on for every suite, so rerun `uv run kengine eval gsm8k --solver kengine --size smoke` under `quick` and `standard`. Compare each run with its Checkpoint B counterpart: `uv run kengine eval-compare <checkpoint B dir> <new dir>`.
+4. **Compare with the baseline.** For each folio run, `uv run kengine eval-compare <baseline folio small dir> <run dir>`. The baseline dir is the Checkpoint A one (`ls eval/results`). The comparison covers only the items both runs have and is written to `<run dir>/compare-<base>.json`.
+5. **Write `eval/results/CHECKPOINT-C.md`** with:
+   - setup: commit, server command, the chosen formal syntax (from the Task 7 probe), N and why
+   - the probe summaries for both syntaxes and the decision
+   - a results table per run (n, headline, abstention, answered accuracy, mean wall s/item, and the baseline's accuracy on the same items)
+   - with vs. without: fixed, broke, caught, false alarms, errors caught and false-alarm rate per profile
+   - a count of `logic` verdicts by outcome and status over all folio sessions, with the script that counted them
+   - 3 audit-trail excerpts from `events.jsonl`: one item kengine fixed, one it broke or falsely blocked, and one blocked by an informal inference
+   - the gsm8k regression against Checkpoint B
+   - insights for the owner: what M2 bought and cost on folio, whether formalization is reliable enough to rely on, what blocks most, and whether M3 or M5 should come next
+6. Commit everything under `eval/results/` except `sessions/` and push.

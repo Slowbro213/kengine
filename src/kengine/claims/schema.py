@@ -3,9 +3,18 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Annotated
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    field_validator,
+    model_validator,
+)
+
+from kengine.claims.formal import canonical
 
 PremiseRef = Annotated[str, StringConstraints(pattern=r"^[bc][0-9]+$")]
 ClaimText = Annotated[str, StringConstraints(min_length=1, max_length=400)]
@@ -55,6 +64,29 @@ def check_computation(type_: str, computation: Computation | None) -> None:
         raise ValueError(f"{type_} claims can't have a computation")
 
 
+FormalMode = Literal["holds", "undetermined"]
+
+
+class Formal(BaseModel):
+    """A claim's formal form (spec §5.3). `holds`: the statements are true. `undetermined`:
+    the premises settle them neither way (how "Uncertain" answers get checked)."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    mode: FormalMode = "holds"
+    statements: tuple[str, ...] = Field(min_length=1, max_length=12)
+
+    @field_validator("statements", mode="before")
+    @classmethod
+    def _canonical(cls, value: object) -> object:
+        if not isinstance(value, (list, tuple)):
+            return value
+        out: list[str] = []
+        for text in value:  # pyright: ignore[reportUnknownVariableType]
+            out.extend(canonical(str(text)))  # pyright: ignore[reportUnknownArgumentType]
+        return tuple(out)
+
+
 class Claim(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -63,6 +95,7 @@ class Claim(BaseModel):
     text: ClaimText
     premises: tuple[PremiseRef, ...] = ()
     computation: Computation | None = None
+    formal: Formal | None = None
     confidence: float | None = Field(default=None, ge=0.0, le=1.0)
     source: Source
     step: int = Field(ge=0)

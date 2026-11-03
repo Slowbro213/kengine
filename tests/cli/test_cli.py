@@ -64,6 +64,10 @@ def test_cli_eval_baseline_writes_results(monkeypatch: pytest.MonkeyPatch, tmp_p
     assert json.loads((dirs[0] / "config.json").read_text())["solver"] == "baseline"
 
 
+# `kengine run` formalizes the task's givens first (logic.formalize_givens is on by default).
+FORMALIZE_NONE = ScriptedReply(content='{"givens": []}')
+
+
 def think_reply() -> ScriptedReply:
     return ScriptedReply(content="Working:\n1. something\nFinal answer: x")
 
@@ -125,7 +129,7 @@ def test_cli_run_prints_answer_and_assumptions(
     data = use_data_dir(tmp_path)
     assumption = {"ref": "c1", "type": "assumption", "text": "a pen costs $2"}
     reply = extract_reply([assumption, comp("c2", "12*2", "24", ["c1"])], "24", ["c2"])
-    use_backend(monkeypatch, ScriptedBackend([think_reply(), reply]))
+    use_backend(monkeypatch, ScriptedBackend([FORMALIZE_NONE, think_reply(), reply]))
     r = runner.invoke(main.app, ["run", "12 pens?", "--profile", "quick"])
     assert r.exit_code == 0, r.output
     assert "status: answered" in r.output and "answer: 24" in r.output
@@ -137,7 +141,8 @@ def test_cli_run_blocked_exit_code(monkeypatch: pytest.MonkeyPatch, tmp_path: Pa
     use_data_dir(tmp_path)
     fact = {"ref": "c1", "type": "fact", "text": "Paris is the capital of France"}
     use_backend(
-        monkeypatch, ScriptedBackend([think_reply(), extract_reply([fact], "Paris", ["c1"])])
+        monkeypatch,
+        ScriptedBackend([FORMALIZE_NONE, think_reply(), extract_reply([fact], "Paris", ["c1"])]),
     )
     r = runner.invoke(
         main.app, ["run", "capital of France?", "--profile", "quick", "--max-steps", "1"]
@@ -180,3 +185,29 @@ def test_cli_eval_rescore(tmp_path: Path) -> None:
     assert r.exit_code == 0, r.output
     assert "headline=0.667 exact=0.000" in r.output
     assert json.loads((tmp_path / "metrics.json").read_text())["headline_accuracy"] > 0.66
+
+
+def test_cli_eval_limit(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    use_backend(monkeypatch, ScriptedBackend([ScriptedReply(content="Final answer: 1234")]))
+    monkeypatch.setattr(suites, "load_items", gsm_items)
+    out = tmp_path / "o"
+    r = runner.invoke(main.app, ["eval", "gsm8k", "--limit", "1", "--out", str(out)])
+    assert r.exit_code == 0, r.output
+    (d,) = list(out.iterdir())
+    assert d.name.endswith("-gsm8k-baseline-smoke-none-first1")
+    assert len((d / "items.jsonl").read_text().splitlines()) == 1
+    assert json.loads((d / "config.json").read_text())["limit"] == 1
+
+
+def test_cli_eval_compare(tmp_path: Path) -> None:
+    for name, correct in [("base", [True, False]), ("other", [True, True])]:
+        d = tmp_path / name
+        d.mkdir()
+        rows = [
+            {"item_id": f"i{n}", "status": "answered", "correct": c} for n, c in enumerate(correct)
+        ]
+        (d / "items.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
+    r = runner.invoke(main.app, ["eval-compare", str(tmp_path / "base"), str(tmp_path / "other")])
+    assert r.exit_code == 0, r.output
+    assert "fixed=1" in r.output and "errors_caught=1.000" in r.output
+    assert (tmp_path / "other" / "compare-base.json").exists()

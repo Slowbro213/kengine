@@ -39,8 +39,16 @@ def _credit(line: ItemLine) -> float:
     return float(line.correct) if line.credit is None else line.credit
 
 
-def results_dir_name(date: datetime.date, suite: str, solver: str, size: str, profile: str) -> str:
-    return f"{date.isoformat()}-{suite}-{solver}-{size}-{profile}"
+def results_dir_name(
+    date: datetime.date,
+    suite: str,
+    solver: str,
+    size: str,
+    profile: str,
+    limit: int | None = None,
+) -> str:
+    name = f"{date.isoformat()}-{suite}-{solver}-{size}-{profile}"
+    return name if limit is None else f"{name}-first{limit}"
 
 
 def _read_lines(path: Path) -> list[ItemLine]:

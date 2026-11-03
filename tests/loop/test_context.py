@@ -4,7 +4,7 @@ from kengine.beliefs.records import BeliefRecord
 from kengine.beliefs.status import Status
 from kengine.beliefs.store import BeliefStore
 from kengine.checkers.base import CheckerKind, Outcome, Verdict
-from kengine.claims.schema import Claim, ClaimType, Computation, Source, SourceKind
+from kengine.claims.schema import Claim, ClaimType, Computation, Formal, Source, SourceKind
 from kengine.loop.context import (
     ContextOverflowError,
     StepSummary,
@@ -146,3 +146,22 @@ def test_extract_context(s: BeliefStore):
 def test_extract_context_without_beliefs():
     ctx = assemble_extract_context(BeliefStore.open(":memory:"), "r", 10_000, approx_tokens)
     assert ctx.messages[-1].content == "## Reasoning to convert\nr"
+
+
+def test_belief_line_shows_formal():
+    rec = BeliefRecord(
+        claim=Claim(
+            id="b2",
+            type=ClaimType.INFERENCE,
+            text="Rex barks",
+            premises=("b1",),
+            source=Source(kind=SourceKind.MODEL),
+            step=1,
+            formal=Formal(mode="undetermined", statements=("barks(rex)",)),
+        ),
+        status=Status.UNCHECKED,
+        status_reason="",
+    )
+    assert belief_line(rec) == (
+        "b2 [unchecked] (inference) Rex barks :: formal (undetermined): barks(rex)"
+    )
