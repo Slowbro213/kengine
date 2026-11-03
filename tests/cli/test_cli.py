@@ -64,6 +64,10 @@ def test_cli_eval_baseline_writes_results(monkeypatch: pytest.MonkeyPatch, tmp_p
     assert json.loads((dirs[0] / "config.json").read_text())["solver"] == "baseline"
 
 
+# `kengine run` formalizes the task's givens first (logic.formalize_givens is on by default).
+FORMALIZE_NONE = ScriptedReply(content='{"givens": []}')
+
+
 def think_reply() -> ScriptedReply:
     return ScriptedReply(content="Working:\n1. something\nFinal answer: x")
 
@@ -125,7 +129,7 @@ def test_cli_run_prints_answer_and_assumptions(
     data = use_data_dir(tmp_path)
     assumption = {"ref": "c1", "type": "assumption", "text": "a pen costs $2"}
     reply = extract_reply([assumption, comp("c2", "12*2", "24", ["c1"])], "24", ["c2"])
-    use_backend(monkeypatch, ScriptedBackend([think_reply(), reply]))
+    use_backend(monkeypatch, ScriptedBackend([FORMALIZE_NONE, think_reply(), reply]))
     r = runner.invoke(main.app, ["run", "12 pens?", "--profile", "quick"])
     assert r.exit_code == 0, r.output
     assert "status: answered" in r.output and "answer: 24" in r.output
@@ -137,7 +141,8 @@ def test_cli_run_blocked_exit_code(monkeypatch: pytest.MonkeyPatch, tmp_path: Pa
     use_data_dir(tmp_path)
     fact = {"ref": "c1", "type": "fact", "text": "Paris is the capital of France"}
     use_backend(
-        monkeypatch, ScriptedBackend([think_reply(), extract_reply([fact], "Paris", ["c1"])])
+        monkeypatch,
+        ScriptedBackend([FORMALIZE_NONE, think_reply(), extract_reply([fact], "Paris", ["c1"])]),
     )
     r = runner.invoke(
         main.app, ["run", "capital of France?", "--profile", "quick", "--max-steps", "1"]

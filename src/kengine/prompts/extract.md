@@ -13,6 +13,17 @@ Claim types:
 
 For a `computation`, set `computation.expression` to the calculation using numbers and operators only (no units, words or variables) and `computation.claimed_result` to the result the reasoning gave, exactly as written. Other types have no `computation`.
 
+For a `fact` or `inference` that's a logical statement about the problem's individuals, properties and relations (not a calculation), also set `formal`.
+
+{formal_syntax}
+
+- Reuse the names in the existing claims' `formal:` forms. Invent a new name only for something new.
+- An `inference`'s `premises` must list every claim it follows from.
+- If the reasoning says the premises settle a statement neither way, record that statement with `"mode": "undetermined"`. Otherwise use `"mode": "holds"`.
+- Leave `formal` out when the item doesn't fit the language. Never force it.
+
+For example, the item "Rex is a mammal (from b1 and b2)" becomes {"ref": "c1", "type": "inference", "text": "Rex is a mammal", "premises": ["b1", "b2"], "formal": {formal_example}}.
+
 Set `premises` to the claims an item follows from: `c#` refs for items in this step, `b#` ids for existing claims. Only cite ids that appear in the reasoning or the existing claims.
 
 For `action`: use `final_answer` only if the reasoning states a final answer. Then set `answer` to it and `preconditions` to the refs from its `Rests on:` line, translated to `c#` or `b#`. Otherwise use `continue`.

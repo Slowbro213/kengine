@@ -169,6 +169,8 @@ def run(
             limits=Limits(
                 max_steps=max_steps, max_completion_tokens=max_tokens, max_wall_s=max_wall_s
             ),
+            formal_syntax=cfg.logic.syntax,
+            formalize_givens=cfg.logic.formalize_givens,
         )
         r = agent.run(Task(goal=task, givens=split_sentences(task)))
         typer.echo(f"status: {r.status}")

@@ -52,6 +52,8 @@ class KengineSolver:
                 checkers=default_checkers(),
                 session=session,
                 limits=Limits(max_completion_tokens=self._token_budget),
+                formal_syntax=self._config.logic.syntax,
+                formalize_givens=self._config.logic.formalize_givens,
             )
             task = Task(
                 goal=item.question,

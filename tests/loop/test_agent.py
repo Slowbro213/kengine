@@ -329,3 +329,91 @@ def test_bad_formal_form_is_dropped_but_claim_kept(tmp_path: Path):
     rec = agent.store.get("b1")
     assert rec.claim.text == "Rex is a dog" and rec.claim.formal is None
     assert "c1's formal form was dropped: unbalanced" in think_prompts(backend)[1]
+
+
+def formalize_json(*items: tuple[int, list[str]]) -> ScriptedReply:
+    return ScriptedReply(
+        content=json.dumps({"givens": [{"given": g, "statements": s} for g, s in items]})
+    )
+
+
+def test_givens_are_formalized_and_a_logical_answer_verified(tmp_path: Path):
+    inference = claim("c1", "inference", "Rex is a mammal", ["b1", "b2"])
+    inference["formal"] = {"statements": ["mammal(rex)"]}
+    backend = ScriptedBackend(
+        [
+            formalize_json((1, ["dog(x) -> mammal(x)"]), (2, ["dog(rex)"]), (3, [])),
+            think(),
+            extract_json([inference], final("True", ["c1"])),
+        ]
+    )
+    agent = Agent(
+        backend=backend,
+        roles=RolesConfig(),
+        profile=get_profile("standard").model_copy(update={"n_samples": 1}),
+        context_budget=8000,
+        checkers=default_checkers(),
+        session=Session.create(tmp_path),
+        sleep=Sleeps(),
+        formalize_givens=True,
+    )
+    r = agent.run(
+        Task(goal="g", givens=["All dogs are mammals.", "Rex is a dog.", "Is Rex a mammal?"])
+    )
+    assert r.status == "answered" and r.answer == "True"
+    assert agent.store.get("b4").status == Status.VERIFIED
+    assert [c.schema_name for c in backend.calls][0] == "Formalization"
+    kinds = [e.kind for e in agent.session.log.read()]
+    assert kinds.index("formalize") < kinds.index("belief_added")
+    assert "formal: dog(rex)" in backend.calls[2].messages[-1].content  # extract sees it
+
+
+def test_formalize_failure_does_not_stop_the_run(tmp_path: Path):
+    backend = ScriptedBackend(
+        [
+            ScriptedReply(content="{not json"),
+            think(),
+            extract_json([], CONTINUE),
+        ]
+    )
+    agent = Agent(
+        backend=backend,
+        roles=RolesConfig(),
+        profile=get_profile("quick"),
+        context_budget=8000,
+        checkers=default_checkers(),
+        session=Session.create(tmp_path),
+        limits=Limits(max_steps=1),
+        sleep=Sleeps(),
+        formalize_givens=True,
+    )
+    r = agent.run(Task(goal="g", givens=["Rex is a dog."]))
+    assert r.status == "budget_exhausted"
+    assert agent.store.get("b1").claim.formal is None
+    events = [e for e in agent.session.log.read() if e.kind == "formalize"]
+    assert len(events) == 1 and not events[0].ok  # type: ignore[union-attr]
+
+
+def test_formalize_backend_error_retries_once(tmp_path: Path):
+    sleeps = Sleeps()
+    backend = ScriptedBackend(
+        [
+            ScriptedReply(error="down"),
+            ScriptedReply(error="down"),
+            think(),
+            extract_json([], CONTINUE),
+        ]
+    )
+    agent = Agent(
+        backend=backend,
+        roles=RolesConfig(),
+        profile=get_profile("quick"),
+        context_budget=8000,
+        checkers=default_checkers(),
+        session=Session.create(tmp_path),
+        limits=Limits(max_steps=1),
+        sleep=sleeps,
+        formalize_givens=True,
+    )
+    assert agent.run(Task(goal="g", givens=["Rex is a dog."])).status == "budget_exhausted"
+    assert sleeps == [5.0]

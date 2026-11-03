@@ -3,7 +3,7 @@ from pathlib import Path
 import pydantic
 import pytest
 
-from kengine.config import load_config
+from kengine.config import KengineConfig, load_config
 
 
 def test_defaults_match_model_card() -> None:
@@ -63,3 +63,9 @@ def test_data_dir_expands_home(tmp_path: Path) -> None:
     p = tmp_path / "e.toml"
     p.write_text('data_dir = "~/kdata"\n')
     assert load_config([p]).data_dir == Path.home() / "kdata"
+
+
+def test_logic_defaults():
+    cfg = KengineConfig()
+    assert cfg.logic.syntax == "text" and cfg.logic.formalize_givens
+    assert cfg.roles.formalize == cfg.roles.extract

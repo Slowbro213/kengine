@@ -86,6 +86,13 @@ class FeedbackEvent(_Event):
     items: list[str]
 
 
+class FormalizeEvent(_Event):
+    kind: Literal["formalize"] = "formalize"
+    ok: bool
+    raw: str | None
+    errors: list[str]
+
+
 class RunFinishedEvent(_Event):
     kind: Literal["run_finished"] = "run_finished"
     result: dict[str, object]
@@ -102,6 +109,7 @@ Event = Annotated[
     | StatusChangedEvent
     | GateEvent
     | FeedbackEvent
+    | FormalizeEvent
     | RunFinishedEvent,
     Field(discriminator="kind"),
 ]
