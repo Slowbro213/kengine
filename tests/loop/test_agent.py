@@ -314,3 +314,18 @@ def test_unsupported_fact_still_blocks(tmp_path: Path):
     agent, _ = make_agent(script, "quick", tmp_path, limits=limits, checkers=default_checkers())
     r = agent.run(Task(goal="pens", givens=["A shop sells pens at $1.25."]))
     assert (r.status, r.blocked_answer) == ("blocked", "24")
+
+
+def test_bad_formal_form_is_dropped_but_claim_kept(tmp_path: Path):
+    bad = claim("c1", "fact", "Rex is a dog")
+    bad["formal"] = {"statements": ["dog(rex"]}
+    agent, backend = make_agent(
+        [think(), extract_json([bad], CONTINUE), think(), extract_json([], CONTINUE)],
+        "quick",
+        tmp_path,
+        limits=Limits(max_steps=2),
+    )
+    agent.run(Task(goal="g"))
+    rec = agent.store.get("b1")
+    assert rec.claim.text == "Rex is a dog" and rec.claim.formal is None
+    assert "c1's formal form was dropped: unbalanced" in think_prompts(backend)[1]

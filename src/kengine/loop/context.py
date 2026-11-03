@@ -53,6 +53,9 @@ def belief_line(rec: BeliefRecord) -> str:
     line = f"{claim.id} [{rec.status}] ({claim.type}) {claim.text}"
     if claim.computation is not None:
         line += f" :: {claim.computation.expression} = {claim.computation.claimed_result}"
+    if claim.formal is not None:
+        label = "formal" if claim.formal.mode == "holds" else f"formal ({claim.formal.mode})"
+        line += f" :: {label}: {'; '.join(claim.formal.statements)}"
     return line
 
 

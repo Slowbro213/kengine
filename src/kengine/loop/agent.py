@@ -37,8 +37,8 @@ from kengine.backend.types import (
 from kengine.beliefs.status import TERMINAL
 from kengine.beliefs.store import BeliefStore, StatusChange
 from kengine.checkers.base import Checker, Verdict
-from kengine.claims.extraction import ExtractedClaim, Extraction
-from kengine.claims.schema import ClaimType, Source, SourceKind
+from kengine.claims.extraction import ExtractedClaim, Extraction, to_formal
+from kengine.claims.schema import ClaimType, Formal, Source, SourceKind
 from kengine.claims.voting import VoteResult, default_k, vote
 from kengine.config import RolesConfig
 from kengine.loop.context import (
@@ -291,6 +291,12 @@ class Agent:
                     step.issues.append(f"{ready.ref} cited unknown {p}; link removed")
                 elif resolved not in premises:
                     premises.append(resolved)
+            formal: Formal | None = None
+            if ready.formal is not None:
+                try:
+                    formal = to_formal(ready.formal)
+                except ValueError as e:
+                    step.issues.append(f"{ready.ref}'s formal form was dropped: {e}")
             claim = self.store.add(
                 type=ClaimType(ready.type),
                 text=ready.text,
@@ -298,6 +304,7 @@ class Agent:
                 source=Source(kind=SourceKind.MODEL, ref=f"step:{step.n}"),
                 step=step.n,
                 computation=ready.computation,
+                formal=formal,
             )
             refs[ready.ref] = claim.id
             step.new_ids.append(claim.id)
