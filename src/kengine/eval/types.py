@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal, Protocol
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 SuiteName = Literal["gsm8k", "hotpotqa", "folio"]
 Size = Literal["smoke", "small", "full"]
@@ -40,7 +40,10 @@ class SolveResult(BaseModel):
 class ItemScore(BaseModel):
     model_config = ConfigDict(frozen=True)
 
+    # `correct` is the strict match; `credit` is what the headline counts. They differ
+    # only for partial-credit suites (hotpotqa: token F1).
     correct: bool
+    credit: float = Field(ge=0.0, le=1.0)
     detail: str = ""
 
 
@@ -56,6 +59,7 @@ class RunMetrics(BaseModel):
     solver: str
     n: int
     headline_accuracy: float
+    exact_accuracy: float
     abstention_rate: float
     answered_accuracy: float | None
     status_counts: dict[str, int]

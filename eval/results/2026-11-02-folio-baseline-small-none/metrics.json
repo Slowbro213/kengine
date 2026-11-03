@@ -3,6 +3,7 @@
   "solver": "baseline",
   "n": 100,
   "headline_accuracy": 0.46,
+  "exact_accuracy": 0.46,
   "abstention_rate": 0.16,
   "answered_accuracy": 0.5476190476190477,
   "status_counts": {

@@ -157,3 +157,26 @@ def test_cli_eval_summarize(tmp_path: Path) -> None:
         "arithmetic_error": 2,
         "truncated": 1,
     }
+
+
+def test_cli_eval_rescore(tmp_path: Path) -> None:
+    line = {
+        "item_id": "hotpotqa-0",
+        "status": "answered",
+        "answer": "Obama",
+        "gold": "Barack Obama",
+        "correct": False,
+        "detail": "f1=0.667",
+        "model_calls": 1,
+        "prompt_tokens": 1,
+        "completion_tokens": 1,
+        "wall_s": 1.0,
+        "session_dir": None,
+        "error": None,
+    }
+    (tmp_path / "items.jsonl").write_text(json.dumps(line) + "\n")
+    (tmp_path / "config.json").write_text('{"suite": "hotpotqa", "solver": "baseline"}')
+    r = runner.invoke(main.app, ["eval-rescore", str(tmp_path)])
+    assert r.exit_code == 0, r.output
+    assert "headline=0.667 exact=0.000" in r.output
+    assert json.loads((tmp_path / "metrics.json").read_text())["headline_accuracy"] > 0.66

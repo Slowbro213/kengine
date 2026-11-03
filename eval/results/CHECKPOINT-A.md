@@ -27,12 +27,12 @@ Run on 2026-11-02/03, branch `feat/foundation`. Solver: `baseline` (one call, th
 | gsm8k | small | 100 | **0.93** | 0.03 | 0.959 | 91.8 | 5,780 |
 | folio | smoke | 10 | 0.50 | 0.20 | 0.625 | 334.3 | 20,398 |
 | folio | small | 100 | **0.46** | 0.16 | 0.548 | 320.7 | 19,614 |
-| hotpotqa | smoke | 10 | 0.80 | 0.00 | 0.800 | 32.7 | 2,082 |
-| hotpotqa | small | 100 | **0.65** | 0.00 | 0.650 | 37.3 | 2,361 |
+| hotpotqa | smoke | 10 | 0.898 (EM 0.80) | 0.00 | 0.898 | 32.7 | 2,082 |
+| hotpotqa | small | 100 | **0.822** (EM 0.65) | 0.00 | 0.822 | 37.3 | 2,361 |
 
 Abstention here is always `partial`: the reply hit the token budget with no `Final answer:` line.
 
-HotpotQA is scored by exact match, as the plan specifies, with F1 kept in each item's `detail`. Mean F1: **0.898** (smoke), **0.822** (small). As a rough guide, and not a metric the code computes, a normalized containment match (one string contains the other) gives 0.86 on small.
+**HotpotQA scoring (owner decision, 2026-11-03): partial credit.** The headline is mean token F1. Exact match (EM) is kept as `exact_accuracy` in `metrics.json` and shown in brackets above. These numbers were first computed by EM, as the plan specified, and re-scored with `kengine eval-rescore`. The failure samples and taxonomies are unchanged: they were drawn from the EM misses. As a rough guide, and not a metric the code computes, a normalized containment match (one string contains the other) gives 0.86 on small.
 
 ## Error taxonomy (hand-labelled failure samples)
 
@@ -54,15 +54,14 @@ Notes per suite, from the `note` fields:
 
 ## Insights for the owner (review point 1)
 
-1. **Scoring rule for hotpotqa needs your decision.** Exact match understates the model by about 20 points. Options: keep EM (the plan), report F1 as the headline, or add a normalized containment or alias match. Changing it would change Checkpoint B comparisons, so it's best decided now.
+1. **Scoring rule for hotpotqa.** Exact match understated the model by about 17 points. Decided: F1 partial credit is the headline from now on (see above).
 2. **Truncation and runaway thinking are the cheapest wins.** They cause 13 of 37 labelled failures on gsm8k and folio, including cases where the model already had the right answer. kengine's per-step THINK budget and loop detection target exactly this.
 3. **folio is where checking should pay off**, but only once there's a logic checker (M2). M1 has only the structure and arithmetic checkers.
 4. **The M1 gate blocks more than the runbook says.** The runbook warns that folio and hotpotqa will abstain heavily under `standard`. The live `kengine run` pen example shows gsm8k word problems will too:
    - The computation `1.25 * 12 = 15` was **verified**.
    - But it rests on "Each pen costs $1.25" and "There are 12 pens". The extractor may only emit `fact` for these, since `given` is reserved for the task, and M1 never turns the task into `given` claims.
    - Facts stay `unchecked` in M1, and the gate checks the full premise closure. So the answer `15` was blocked at every step, and the run ended `blocked` after 7 steps, 25 calls and 503 s.
-   - The fix needs your decision, so I haven't made it. Options: seed `given` claims from the task text, let the extractor mark claims that quote the task, or have the gate stop at verified computations.
-   - Without one of these, kengine `standard` on gsm8k in Checkpoint B will mostly measure this gap, not the checks.
+   - Without a fix, kengine `standard` on gsm8k in Checkpoint B would mostly measure this gap, not the checks. The owner left the fix to me. It's described in `docs/real-machine-runbook.md` (M1 gate notes) and was in place before Checkpoint B ran.
 
 ## Live agent checks (Checkpoint B steps 2–3, run early)
 

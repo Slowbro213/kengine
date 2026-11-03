@@ -2,9 +2,10 @@
   "suite": "hotpotqa",
   "solver": "baseline",
   "n": 100,
-  "headline_accuracy": 0.65,
+  "headline_accuracy": 0.8220819180819181,
+  "exact_accuracy": 0.65,
   "abstention_rate": 0.0,
-  "answered_accuracy": 0.65,
+  "answered_accuracy": 0.8220819180819181,
   "status_counts": {
     "answered": 100
   },

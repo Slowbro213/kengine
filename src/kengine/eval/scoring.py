@@ -9,15 +9,19 @@ from kengine.eval.types import ItemScore
 from kengine.numbers import parse_number
 
 
+def _binary(correct: bool, detail: str = "") -> ItemScore:
+    return ItemScore(correct=correct, credit=float(correct), detail=detail)
+
+
 def score_numeric(gold: str, answer: str | None) -> ItemScore:
     if answer is None:
-        return ItemScore(correct=False, detail="no answer")
+        return _binary(False, "no answer")
     g, a = parse_number(gold), parse_number(answer)
     if g is None:
         raise ValueError(f"gold answer is not numeric: {gold!r}")
     if a is None:
-        return ItemScore(correct=False, detail="answer not numeric")
-    return ItemScore(correct=g == a)
+        return _binary(False, "answer not numeric")
+    return _binary(g == a)
 
 
 def _f1(gold: str, answer: str) -> float:
@@ -30,10 +34,12 @@ def _f1(gold: str, answer: str) -> float:
 
 
 def score_em_f1(gold: str, answer: str | None) -> ItemScore:
+    """Partial credit: the credit is token F1; `correct` stays exact match."""
     if answer is None:
-        return ItemScore(correct=False, detail="f1=0.000")
+        return ItemScore(correct=False, credit=0.0, detail="f1=0.000")
     em = normalize_text(gold) == normalize_text(answer)
-    return ItemScore(correct=em, detail=f"f1={_f1(gold, answer):.3f}")
+    f1 = 1.0 if em else _f1(gold, answer)
+    return ItemScore(correct=em, credit=f1, detail=f"f1={f1:.3f}")
 
 
 _LABEL_ALIASES = {"unknown": "uncertain"}
@@ -46,5 +52,5 @@ def _label(s: str) -> str:
 
 def score_label(gold: str, answer: str | None) -> ItemScore:
     if answer is None:
-        return ItemScore(correct=False, detail="no answer")
-    return ItemScore(correct=_label(gold) == _label(answer))
+        return _binary(False, "no answer")
+    return _binary(_label(gold) == _label(answer))

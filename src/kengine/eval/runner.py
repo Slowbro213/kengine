@@ -23,6 +23,8 @@ class ItemLine(BaseModel):
     answer: str | None
     gold: str
     correct: bool
+    # None in results written before partial credit; read as `float(correct)`.
+    credit: float | None = None
     detail: str
     model_calls: int
     prompt_tokens: int
@@ -31,6 +33,10 @@ class ItemLine(BaseModel):
     session_dir: str | None
     error: str | None
     transcript_excerpt: str | None = None
+
+
+def _credit(line: ItemLine) -> float:
+    return float(line.correct) if line.credit is None else line.credit
 
 
 def results_dir_name(date: datetime.date, suite: str, solver: str, size: str, profile: str) -> str:
@@ -67,7 +73,6 @@ def _solve(solver: Solver, item: EvalItem) -> SolveResult:
 def _metrics(suite: str, solver: str, lines: Sequence[ItemLine]) -> RunMetrics:
     n = len(lines)
     answered = [x for x in lines if x.status == "answered"]
-    correct = sum(x.correct for x in lines)
 
     def mean(values: Sequence[float]) -> float:
         return sum(values) / n if n else 0.0
@@ -76,9 +81,10 @@ def _metrics(suite: str, solver: str, lines: Sequence[ItemLine]) -> RunMetrics:
         suite=suite,
         solver=solver,
         n=n,
-        headline_accuracy=correct / n if n else 0.0,
+        headline_accuracy=mean([_credit(x) for x in lines]),
+        exact_accuracy=mean([float(x.correct) for x in lines]),
         abstention_rate=(n - len(answered)) / n if n else 0.0,
-        answered_accuracy=(sum(x.correct for x in answered) / len(answered)) if answered else None,
+        answered_accuracy=(sum(_credit(x) for x in answered) / len(answered)) if answered else None,
         status_counts=dict(Counter(x.status for x in lines)),
         mean_model_calls=mean([x.model_calls for x in lines]),
         mean_prompt_tokens=mean([x.prompt_tokens for x in lines]),
@@ -114,6 +120,7 @@ def run_eval(
                 answer=result.answer,
                 gold=item.gold,
                 correct=score.correct if score else False,
+                credit=score.credit if score else 0.0,
                 detail=score.detail if score else "",
                 model_calls=result.model_calls,
                 prompt_tokens=result.prompt_tokens,
@@ -129,9 +136,31 @@ def run_eval(
 
     lines = _read_lines(items_path)
     _write_failures(out_dir, lines, items, failure_sample_size, seed)
-    metrics = _metrics(spec.name, solver.name, lines)
+    return _write_metrics(out_dir, spec.name, solver.name, lines)
+
+
+def _write_metrics(out_dir: Path, suite: str, solver: str, lines: Sequence[ItemLine]) -> RunMetrics:
+    metrics = _metrics(suite, solver, lines)
     (out_dir / "metrics.json").write_text(metrics.model_dump_json(indent=2) + "\n", "utf-8")
     return metrics
+
+
+def rescore(spec: SuiteSpec, out_dir: Path) -> RunMetrics:
+    """Re-score a finished run's answers with the suite's current scorer, rewriting
+    items.jsonl and metrics.json. failures_sample.jsonl is left alone, so a hand-made
+    taxonomy.jsonl still matches it."""
+    items_path = out_dir / "items.jsonl"
+    lines = [line.model_copy(update=_score_fields(spec, line)) for line in _read_lines(items_path)]
+    items_path.write_text("".join(x.model_dump_json() + "\n" for x in lines), "utf-8")
+    solver = json.loads((out_dir / "config.json").read_text(encoding="utf-8"))["solver"]
+    return _write_metrics(out_dir, spec.name, str(solver), lines)
+
+
+def _score_fields(spec: SuiteSpec, line: ItemLine) -> dict[str, object]:
+    if line.status != "answered":
+        return {"correct": False, "credit": 0.0, "detail": ""}
+    score = spec.score(line.gold, line.answer)
+    return {"correct": score.correct, "credit": score.credit, "detail": score.detail}
 
 
 def _write_failures(
@@ -142,7 +171,7 @@ def _write_failures(
     seed: int,
 ) -> None:
     questions = {i.id: i.question for i in items}
-    wrong = [x for x in lines if not x.correct]
+    wrong = [x for x in lines if _credit(x) < 1.0]
     chosen = set(x.item_id for x in random.Random(seed).sample(wrong, min(size, len(wrong))))
     with (out_dir / "failures_sample.jsonl").open("w", encoding="utf-8") as f:
         for x in wrong:

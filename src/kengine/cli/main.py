@@ -20,9 +20,9 @@ from kengine.config import BackendConfig, KengineConfig, default_config_paths, l
 from kengine.eval import suites
 from kengine.eval.baseline import BaselineSolver
 from kengine.eval.kengine_solver import KengineSolver
-from kengine.eval.runner import results_dir_name, run_eval
+from kengine.eval.runner import rescore, results_dir_name, run_eval
 from kengine.eval.taxonomy import summarize_taxonomy
-from kengine.eval.types import Size, Solver, SuiteName
+from kengine.eval.types import RunMetrics, Size, Solver, SuiteName
 from kengine.loop.agent import Agent, Limits
 from kengine.loop.profiles import get_profile
 from kengine.loop.task import Task
@@ -112,12 +112,25 @@ def eval_cmd(
     }
     typer.echo(f"{suite}/{solver}/{size}: {len(items)} items -> {out_dir}")
     m = run_eval(suites.SUITES[suite], items, the_solver, out_dir, run_config, seed=seed)
+    typer.echo(_metrics_line(m))
+
+
+def _metrics_line(m: RunMetrics) -> str:
     answered = "n/a" if m.answered_accuracy is None else f"{m.answered_accuracy:.3f}"
-    typer.echo(
-        f"n={m.n} headline={m.headline_accuracy:.3f} abstention={m.abstention_rate:.3f} "
-        f"answered_acc={answered} statuses={m.status_counts} "
-        f"mean_wall_s={m.mean_wall_s:.1f}"
+    return (
+        f"n={m.n} headline={m.headline_accuracy:.3f} exact={m.exact_accuracy:.3f} "
+        f"abstention={m.abstention_rate:.3f} answered_acc={answered} "
+        f"statuses={m.status_counts} mean_wall_s={m.mean_wall_s:.1f}"
     )
+
+
+@app.command("eval-rescore")
+def eval_rescore(
+    results_dir: Annotated[Path, typer.Argument(help="A finished results dir")],
+) -> None:
+    """Re-score RESULTS_DIR's answers with the suite's current scorer."""
+    suite = json.loads((results_dir / "config.json").read_text(encoding="utf-8"))["suite"]
+    typer.echo(_metrics_line(rescore(suites.SUITES[suite], results_dir)))
 
 
 def _profile_or_exit(name: str) -> None:

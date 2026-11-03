@@ -10,10 +10,18 @@ def test_score_numeric() -> None:
 
 def test_score_em_f1() -> None:
     s = score_em_f1("the Eiffel Tower", "Eiffel tower.")
-    assert s.correct and s.detail == "f1=1.000"
+    assert s.correct and s.credit == 1.0 and s.detail == "f1=1.000"
     p = score_em_f1("Barack Obama", "Obama")
     assert not p.correct and p.detail == "f1=0.667"
-    assert score_em_f1("x", None).detail == "f1=0.000"
+    assert abs(p.credit - 2 / 3) < 1e-9
+    none = score_em_f1("x", None)
+    assert (none.credit, none.detail) == (0.0, "f1=0.000")
+
+
+def test_binary_scorers_give_full_or_no_credit() -> None:
+    assert score_numeric("5", "5").credit == 1.0
+    assert score_numeric("5", "6").credit == 0.0
+    assert score_label("True", "False").credit == 0.0
 
 
 def test_score_label_accepts_unknown_as_uncertain() -> None:

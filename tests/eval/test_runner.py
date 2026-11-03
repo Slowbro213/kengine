@@ -3,7 +3,7 @@ from datetime import date
 from pathlib import Path
 
 from kengine.backend.types import BackendError
-from kengine.eval.runner import results_dir_name, run_eval
+from kengine.eval.runner import rescore, results_dir_name, run_eval
 from kengine.eval.suites import SUITES
 from kengine.eval.types import EvalItem, SolveResult, SolveStatus
 
@@ -108,3 +108,40 @@ def test_results_dir_name() -> None:
         results_dir_name(date(2026, 11, 2), "gsm8k", "baseline", "smoke", "none")
         == "2026-11-02-gsm8k-baseline-smoke-none"
     )
+
+
+def hotpot(i: int, gold: str) -> EvalItem:
+    return EvalItem(
+        id=f"hotpotqa-{i}", suite="hotpotqa", question=f"q{i}", gold=gold, answer_format="phrase"
+    )
+
+
+def test_partial_credit_headline_and_exact_accuracy(tmp_path: Path) -> None:
+    items = [hotpot(0, "Barack Obama"), hotpot(1, "Paris"), hotpot(2, "Rome")]
+    solver = StubSolver(
+        {
+            "hotpotqa-0": result("Obama"),
+            "hotpotqa-1": result("Paris"),
+            "hotpotqa-2": result(None, "partial"),
+        }
+    )
+    m = run_eval(SUITES["hotpotqa"], items, solver, tmp_path, {"solver": "stub"})
+    assert abs(m.headline_accuracy - (2 / 3 + 1) / 3) < 1e-9
+    assert m.exact_accuracy == 1 / 3
+    assert m.answered_accuracy is not None and abs(m.answered_accuracy - (2 / 3 + 1) / 2) < 1e-9
+    failures = (tmp_path / "failures_sample.jsonl").read_text().splitlines()
+    assert sorted(json.loads(x)["item_id"] for x in failures) == ["hotpotqa-0", "hotpotqa-2"]
+
+
+def test_rescore_fills_credit_for_old_results(tmp_path: Path) -> None:
+    items = [hotpot(0, "Barack Obama"), hotpot(1, "Paris")]
+    solver = StubSolver({"hotpotqa-0": result("Obama"), "hotpotqa-1": result("Paris")})
+    run_eval(SUITES["hotpotqa"], items, solver, tmp_path, {"solver": "stub"})
+    old = [{k: v for k, v in x.items() if k != "credit"} for x in read_items(tmp_path)]
+    (tmp_path / "items.jsonl").write_text("".join(json.dumps(x) + "\n" for x in old))
+    sample = (tmp_path / "failures_sample.jsonl").read_text()
+    m = rescore(SUITES["hotpotqa"], tmp_path)
+    assert abs(m.headline_accuracy - (2 / 3 + 1) / 2) < 1e-9
+    assert m.solver == "stub" and m.exact_accuracy == 0.5
+    assert [x["credit"] for x in read_items(tmp_path)][1] == 1.0
+    assert (tmp_path / "failures_sample.jsonl").read_text() == sample
