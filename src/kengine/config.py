@@ -23,7 +23,7 @@ EXTRACT_SAMPLING = SamplingParams(
 
 
 def _think_role() -> RoleConfig:
-    return RoleConfig(sampling=THINK_SAMPLING, thinking=True, max_tokens=8192)
+    return RoleConfig(sampling=THINK_SAMPLING, thinking=True, max_tokens=16384)
 
 
 def _extract_role() -> RoleConfig:
