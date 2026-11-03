@@ -25,7 +25,7 @@ from kengine.eval.taxonomy import summarize_taxonomy
 from kengine.eval.types import RunMetrics, Size, Solver, SuiteName
 from kengine.loop.agent import Agent, Limits
 from kengine.loop.profiles import get_profile
-from kengine.loop.task import Task
+from kengine.loop.task import Task, split_sentences
 
 app = typer.Typer(no_args_is_help=True, help="kengine: check a small model's reasoning.")
 
@@ -170,7 +170,7 @@ def run(
                 max_steps=max_steps, max_completion_tokens=max_tokens, max_wall_s=max_wall_s
             ),
         )
-        r = agent.run(Task(goal=task))
+        r = agent.run(Task(goal=task, givens=split_sentences(task)))
         typer.echo(f"status: {r.status}")
         if r.answer is not None:
             typer.echo(f"answer: {r.answer}")

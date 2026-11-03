@@ -5,6 +5,7 @@ Reason freely: think it through however suits the problem. Then write down what 
 Rules:
 
 - Existing claims have ids like `b3`. Refer to them by id (for example "from b3 and b5") and don't restate them.
+- The task's own statements are listed as `given` claims. Cite the given each number or fact comes from.
 - If the checker reported a problem, deal with it first: fix the claim or explain why it was wrong.
 - Rely on the documents rather than memory when documents are given.
 - Don't repeat claims that are already established.
@@ -20,7 +21,7 @@ Then end with exactly one of these two lines:
 Next: continue
 Final answer: <answer>
 
-and after it a line naming the items or ids your conclusion rests on:
+and after it a line naming the items or ids your conclusion rests on. Name the item that produces the answer, such as the calculation that computes it, not a sentence restating it:
 
 Rests on: <ids or item numbers>
 
@@ -28,7 +29,7 @@ Example ending:
 
 Working:
 1. Each box holds 12 pens (from b1).
-2. 3 * 12 = 36
-3. So 3 boxes hold 36 pens (from 1 and 2).
+2. Ann buys 3 boxes (from b2).
+3. 3 * 12 = 36 (from 1 and 2).
 Final answer: 36
 Rests on: 3

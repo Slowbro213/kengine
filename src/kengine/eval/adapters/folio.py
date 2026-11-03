@@ -11,9 +11,11 @@ ANSWER_FORMAT = "Answer with exactly one of: True, False, Uncertain."
 def parse_row(row: Mapping[str, object], index: int) -> EvalItem:
     premises = row["premises"]
     if isinstance(premises, str):
-        premises_text = premises.strip()
+        lines = [p.strip() for p in premises.splitlines()]
     else:
-        premises_text = "\n".join(str(p).strip() for p in cast(Sequence[object], premises))
+        lines = [str(p).strip() for p in cast(Sequence[object], premises)]
+    lines = [p for p in lines if p]
+    premises_text = "\n".join(lines)
     question = (
         f"Premises:\n{premises_text}\n\n"
         f"Conclusion: {str(row['conclusion']).strip()}\n\n"
@@ -26,4 +28,5 @@ def parse_row(row: Mapping[str, object], index: int) -> EvalItem:
         question=question,
         gold=str(row["label"]).strip(),
         answer_format=ANSWER_FORMAT,
+        givens=lines,  # the premises; never the conclusion, which is what's being judged
     )

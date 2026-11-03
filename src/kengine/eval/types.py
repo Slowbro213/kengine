@@ -20,6 +20,8 @@ class EvalItem(BaseModel):
     documents: list[str] = []
     gold: str
     answer_format: str
+    # Statements the task supplies; the kengine solver seeds them as `given` claims.
+    givens: list[str] = []
 
 
 SolveStatus = Literal["answered", "abstained", "partial", "blocked", "error"]

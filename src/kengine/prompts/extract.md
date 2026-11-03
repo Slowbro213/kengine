@@ -21,11 +21,11 @@ Example. Reasoning:
 
 Working:
 1. Each box holds 12 pens (from b1).
-2. 3 * 12 = 36
-3. So 3 boxes hold 36 pens (from 1 and 2).
+2. Ann buys 3 boxes (from b2).
+3. 3 * 12 = 36 (from 1 and 2).
 Final answer: 36
 Rests on: 3
 
 Output:
 
-{"claims": [{"ref": "c1", "type": "fact", "text": "Each box holds 12 pens", "premises": ["b1"]}, {"ref": "c2", "type": "computation", "text": "3 boxes of 12 pens", "premises": [], "computation": {"expression": "3 * 12", "claimed_result": "36"}}, {"ref": "c3", "type": "inference", "text": "3 boxes hold 36 pens", "premises": ["c1", "c2"]}], "action": {"kind": "final_answer", "answer": "36", "preconditions": ["c3"]}}
+{"claims": [{"ref": "c1", "type": "fact", "text": "Each box holds 12 pens", "premises": ["b1"]}, {"ref": "c2", "type": "fact", "text": "Ann buys 3 boxes", "premises": ["b2"]}, {"ref": "c3", "type": "computation", "text": "Pens in 3 boxes of 12", "premises": ["c1", "c2"], "computation": {"expression": "3 * 12", "claimed_result": "36"}}], "action": {"kind": "final_answer", "answer": "36", "preconditions": ["c3"]}}

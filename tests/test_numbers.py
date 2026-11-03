@@ -29,3 +29,22 @@ def test_parse_number(text: str, expected: Fraction | None) -> None:
 def test_decimal_places() -> None:
     assert (decimal_places("3.30"), decimal_places("12"), decimal_places("x")) == (2, 0, None)
     assert decimal_places("$1,234.50") == 2
+
+
+def test_numbers_in_reads_digits_and_words():
+    from fractions import Fraction
+
+    from kengine.numbers import numbers_in
+
+    assert numbers_in("A shop sells pens at $1.25. How much do 12 pens cost?") == {
+        Fraction("1.25"),
+        Fraction(12),
+    }
+    assert numbers_in("Three dozen eggs, 1,000 hens, pages 5-6") == {
+        Fraction(3),
+        Fraction(12),
+        Fraction(1000),
+        Fraction(5),
+        Fraction(6),
+    }
+    assert numbers_in("no numbers here") == set()

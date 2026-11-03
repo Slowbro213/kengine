@@ -79,4 +79,12 @@ Run these inside `nix-shell` on NixOS, with the server from Setup step 4 running
    - 3 example audit trails (one where kengine helped, one where it hurt, one blocked), as excerpts from `events.jsonl`
 6. Commit everything under `eval/results/` except `sessions/`. Push only with the owner's go-ahead.
 
-M1 only has the structure and arithmetic checkers, so under the `standard` gate any answer that rests on an unchecked fact or inference is blocked. Expect a high abstention rate on folio and hotpotqa until the logic checker (M2) and evidence checks (M3) arrive; that's by design, and the checkpoint should report it, not work around it.
+M1 has the structure and arithmetic checkers, plus the restatement checker described below. Under the `standard` gate, any answer that rests on an unchecked fact or inference is blocked. Expect a high abstention rate on folio and hotpotqa until the logic checker (M2) and evidence checks (M3) arrive. That's by design: the checkpoint should report it, not work around it.
+
+**Task givens and the restatement checker** (added after Checkpoint A; owner left the design to the builder). In Checkpoint A's live `kengine run`, a correct, verified `1.25 * 12 = 15` was blocked. It rested on "each pen costs $1.25", which the model may only label `fact`, and nothing in M1 checks facts. The fix has three parts:
+
+- The task's statements are seeded as `given` claims (source `task`) before the first step: gsm8k question sentences, folio premises (never the conclusion), and the sentences of a `kengine run` task. hotpotqa documents are evidence, not givens, so none are seeded there.
+- The `restatement` checker (evidence kind) marks a numeric `fact` as `supported` when every number it states appears in what it cites, which must be givens or verified computations. An uncited fact can instead match a single given that has all its numbers and shares a word with it. Facts without numbers are untouched.
+- The prompt examples now end with the answer resting on the calculation, not on a restating inference, which nothing in M1 can check.
+
+`supported` passes the `standard` gate but not `strict`. The check is lexical: a fact that cites the right given but uses a number from another of the givens it cites can pass. It's recorded in the verdict's evidence for audit.

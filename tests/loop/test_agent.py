@@ -5,12 +5,15 @@ from kengine.audit.session import Session
 from kengine.backend.fake import ScriptedBackend, ScriptedReply
 from kengine.backend.types import FinishReason
 from kengine.beliefs.status import Status
+from kengine.checkers import default_checkers
 from kengine.checkers.arithmetic import ArithmeticChecker
+from kengine.checkers.base import Checker
 from kengine.checkers.structure import StructureChecker
+from kengine.claims.schema import ClaimType, SourceKind
 from kengine.config import RolesConfig
 from kengine.loop.agent import NO_LIMITS, Agent, Limits
 from kengine.loop.profiles import get_profile
-from kengine.loop.task import Task
+from kengine.loop.task import Task, split_sentences
 
 Claim = dict[str, object]
 Action = dict[str, object]
@@ -56,6 +59,7 @@ def make_agent(
     tmp: Path,
     limits: Limits = NO_LIMITS,
     sleep: Sleeps | None = None,
+    checkers: list[Checker] | None = None,
 ) -> tuple[Agent, ScriptedBackend]:
     backend = ScriptedBackend(script)
     agent = Agent(
@@ -63,7 +67,7 @@ def make_agent(
         roles=RolesConfig(),
         profile=get_profile(profile),
         context_budget=8000,
-        checkers=[StructureChecker(), ArithmeticChecker()],
+        checkers=[StructureChecker(), ArithmeticChecker()] if checkers is None else checkers,
         session=Session.create(tmp),
         limits=limits,
         sleep=Sleeps() if sleep is None else sleep,
@@ -274,3 +278,39 @@ def test_premises_inserted_before_dependents(tmp_path: Path):
     assert r.status == "answered"
     assert store.get("b1").claim.text == "2+2 = 4"
     assert store.get("b2").claim.premises == ("b1",)
+
+
+def test_task_givens_are_seeded_and_restating_facts_supported(tmp_path: Path):
+    script = [
+        think("Working:\n1. Each pen costs $1.25 (from b1).\n2. 1.25 * 12 = 15 (from 1 and b2)"),
+        extract_json(
+            [
+                claim("c1", "fact", "Each pen costs $1.25", ["b1"]),
+                comp("c2", "1.25 * 12", "15", ["c1", "b2"]),
+            ],
+            final("15", ["c2"]),
+        ),
+    ]
+    agent, backend = make_agent(script, "quick", tmp_path, checkers=default_checkers())
+    givens = split_sentences("A shop sells pens at $1.25. How much do 12 pens cost?")
+    r = agent.run(Task(goal="pens", givens=givens))
+    assert (r.status, r.answer) == ("answered", "15")
+    store = Session.open(r.session_dir).store
+    assert [store.get(i).claim.type for i in ("b1", "b2")] == [ClaimType.GIVEN] * 2
+    assert store.get("b1").claim.source.kind == SourceKind.TASK
+    assert (store.get("b3").status, store.get("b4").status) == (Status.SUPPORTED, Status.VERIFIED)
+    assert "b1 [unchecked] (given) A shop sells pens at $1.25." in think_prompts(backend)[0]
+
+
+def test_unsupported_fact_still_blocks(tmp_path: Path):
+    script = [
+        think(),
+        extract_json(
+            [claim("c1", "fact", "Each pen costs $2", ["b1"]), comp("c2", "2 * 12", "24", ["c1"])],
+            final("24", ["c2"]),
+        ),
+    ]
+    limits = Limits(max_steps=1)
+    agent, _ = make_agent(script, "quick", tmp_path, limits=limits, checkers=default_checkers())
+    r = agent.run(Task(goal="pens", givens=["A shop sells pens at $1.25."]))
+    assert (r.status, r.blocked_answer) == ("blocked", "24")

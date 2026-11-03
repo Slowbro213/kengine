@@ -56,6 +56,7 @@ from kengine.loop.task import Task
 RunStatus = Literal["answered", "blocked", "partial", "budget_exhausted", "error"]
 
 LOOP_REPEATS = 3
+MAX_GIVEN_CHARS = 400  # ClaimText's limit
 CUT_OFF = "your reasoning was cut off before the Working section; be more concise"
 NO_CLAIMS = "could not turn your reasoning into claims; keep the Working list short and numbered"
 NO_ANSWER_TEXT = "final answer had no text"
@@ -170,7 +171,23 @@ class Agent:
         self._log(RunFinishedEvent(step=self._steps, result=result.model_dump(mode="json")))
         return result
 
+    def _seed_givens(self, task: Task) -> None:
+        """The task's statements become `given` claims b1, b2, ... before the first step.
+        One too long for a claim is left out; it's still in the task text."""
+        for i, text in enumerate(task.givens, 1):
+            if len(text) > MAX_GIVEN_CHARS:
+                continue
+            claim = self.store.add(
+                type=ClaimType.GIVEN,
+                text=text,
+                premises=[],
+                source=Source(kind=SourceKind.TASK, ref=f"given:{i}"),
+                step=0,
+            )
+            self._log(BeliefAddedEvent(step=0, claim=claim))
+
     def _loop(self, task: Task) -> None:
+        self._seed_givens(task)
         while True:
             self._check_limits()
             self._steps += 1

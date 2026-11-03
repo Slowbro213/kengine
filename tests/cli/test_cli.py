@@ -129,7 +129,7 @@ def test_cli_run_prints_answer_and_assumptions(
     r = runner.invoke(main.app, ["run", "12 pens?", "--profile", "quick"])
     assert r.exit_code == 0, r.output
     assert "status: answered" in r.output and "answer: 24" in r.output
-    assert "ASSUMED: b1 a pen costs $2" in r.output
+    assert "ASSUMED: b2 a pen costs $2" in r.output  # b1 is the given "12 pens?"
     assert f"session: {data / 'sessions'}" in r.output
 
 

@@ -74,3 +74,5 @@ Notes per suite, from the `note` fields:
   ```
 
   Exit code 3. `events.jsonl` starts with `session_started` and ends with `run_finished`; `beliefs.sqlite` has the beliefs, changes and verdicts tables; the computation belief is `verified`. See insight 4 for why it was still blocked.
+
+  After the givens and restatement fix, the same command gives `status: answered`, `answer: 15`, exit 0, in 1 step (4 calls, 70 s). The trail: givens b1 and b2 come from the task, facts b3 and b4 are `supported` ("restates b1", "restates b2"), computation b5 is `verified`, and the gate allows the answer.

@@ -54,7 +54,10 @@ class KengineSolver:
                 limits=Limits(max_completion_tokens=self._token_budget),
             )
             task = Task(
-                goal=item.question, documents=item.documents, answer_format=item.answer_format
+                goal=item.question,
+                documents=item.documents,
+                answer_format=item.answer_format,
+                givens=item.givens,
             )
             r = agent.run(task)
             excerpt = session_excerpt(session)

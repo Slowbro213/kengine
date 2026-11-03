@@ -24,6 +24,36 @@ def parse_number(text: str) -> Fraction | None:
     return Fraction(m.group(0))
 
 
+_WORD_NUMBERS = (
+    {
+        w: Fraction(i)
+        for i, w in enumerate(
+            "zero one two three four five six seven eight nine ten eleven twelve thirteen "
+            "fourteen fifteen sixteen seventeen eighteen nineteen twenty".split()
+        )
+    }
+    | {
+        w: Fraction(10 * i)
+        for i, w in enumerate("thirty forty fifty sixty seventy eighty ninety".split(), 3)
+    }
+    | {
+        "dozen": Fraction(12),
+        "hundred": Fraction(100),
+        "thousand": Fraction(1000),
+    }
+)
+_WORD_RE = re.compile(r"\b(" + "|".join(_WORD_NUMBERS) + r")\b", re.IGNORECASE)
+
+
+def numbers_in(text: str) -> set[Fraction]:
+    """Every number in `text`: digits (as `parse_number` reads them) and the common number
+    words (`three`, `twenty`, `dozen`). Hyphens count as separators, not minus signs, so
+    `5-6` gives 5 and 6."""
+    cleaned = _clean(text)
+    found = {abs(Fraction(m.group(0))) for m in _NUMBER_RE.finditer(cleaned)}
+    return found | {_WORD_NUMBERS[m.group(1).lower()] for m in _WORD_RE.finditer(cleaned)}
+
+
 def decimal_places(text: str) -> int | None:
     """Digits after the decimal point in the first number of `text`."""
     m = _NUMBER_RE.search(_clean(text))

@@ -40,3 +40,28 @@ def test_folio_row_with_premise_list() -> None:
     }
     item = folio.parse_row(row, 5)
     assert item.id == "folio-5" and "All A are B.\nX is A." in item.question
+
+
+def test_gsm8k_givens_are_the_question_sentences() -> None:
+    q = "A shop sells pens at $1.25. How much do 12 pens cost?"
+    item = gsm8k.parse_row({"question": q, "answer": "#### 15"}, 0)
+    assert item.givens == ["A shop sells pens at $1.25.", "How much do 12 pens cost?"]
+
+
+def test_folio_givens_are_the_premises_not_the_conclusion() -> None:
+    row: dict[str, object] = {
+        "premises": "All A are B.\n\nX is A.\n",
+        "conclusion": "X is B.",
+        "label": "True",
+    }
+    assert folio.parse_row(row, 0).givens == ["All A are B.", "X is A."]
+
+
+def test_hotpotqa_has_no_givens() -> None:
+    row: dict[str, object] = {
+        "id": "x",
+        "question": "Who?",
+        "answer": "Ann",
+        "context": {"title": ["T1"], "sentences": [["a."]]},
+    }
+    assert hotpotqa.parse_row(row, 0).givens == []
