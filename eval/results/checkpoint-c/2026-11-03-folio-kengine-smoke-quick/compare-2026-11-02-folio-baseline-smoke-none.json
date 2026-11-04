@@ -1,0 +1,34 @@
+{
+  "n": 10,
+  "base_correct": 5,
+  "other_correct": 4,
+  "both_right": 3,
+  "broke": 0,
+  "false_alarm": 2,
+  "fixed": 1,
+  "caught": 3,
+  "both_wrong": 1,
+  "ids": {
+    "both_right": [
+      "folio-tasksource-1",
+      "folio-tasksource-1366",
+      "folio-tasksource-306"
+    ],
+    "broke": [],
+    "false_alarm": [
+      "folio-tasksource-664",
+      "folio-tasksource-1013"
+    ],
+    "fixed": [
+      "folio-tasksource-849"
+    ],
+    "caught": [
+      "folio-tasksource-981",
+      "folio-tasksource-958",
+      "folio-tasksource-1348"
+    ],
+    "both_wrong": [
+      "folio-tasksource-412"
+    ]
+  }
+}
