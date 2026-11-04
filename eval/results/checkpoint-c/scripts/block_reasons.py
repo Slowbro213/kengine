@@ -1,9 +1,11 @@
-import json, sys
+import json
+import sys
 from collections import Counter
 from pathlib import Path
 
 # Why kengine's blocked folio answers were blocked, and whether they'd have been right.
-# For each blocking belief at the last gate: the cause, from its type, formal form and logic verdicts.
+# For each blocking belief at the last gate: the cause, from its type, formal form and
+# logic verdicts.
 NORM = {"true": "True", "false": "False", "uncertain": "Uncertain"}
 
 
@@ -31,14 +33,14 @@ def cause(b: dict, verdicts: list[dict], beliefs: dict) -> str:
 
 
 for run in sys.argv[1:]:
-    gold = {json.loads(l)["item_id"]: json.loads(l) for l in open(Path(run) / "items.jsonl")}
+    gold = {json.loads(x)["item_id"]: json.loads(x) for x in open(Path(run) / "items.jsonl")}
     causes: Counter[str] = Counter()
     per_item: Counter[str] = Counter()
     would = Counter()
     giv = Counter()
     for item in gold.values():
         ev = Path(item["session_dir"]) / "events.jsonl"
-        events = [json.loads(l) for l in ev.read_text().splitlines()]
+        events = [json.loads(x) for x in ev.read_text().splitlines()]
         beliefs, verdicts, gates = {}, {}, []
         for e in events:
             if e["kind"] == "belief_added":
@@ -58,7 +60,11 @@ for run in sys.argv[1:]:
         if item["status"] == "answered":
             continue
         ba = fin.get("blocked_answer")
-        key = "no answer" if ba is None else ("right" if NORM.get(str(ba).strip().lower()) == item["gold"] else "wrong")
+        key = (
+            "no answer"
+            if ba is None
+            else ("right" if NORM.get(str(ba).strip().lower()) == item["gold"] else "wrong")
+        )
         would[key] += 1
         if not gates or gates[-1]["allowed"]:
             per_item["no final gate"] += 1
