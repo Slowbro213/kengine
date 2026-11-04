@@ -51,7 +51,19 @@ def test_strict_blocks_assumed_premise(s: BeliefStore):
 
 
 def test_given_is_acceptable_even_strict(s: BeliefStore):
-    assert evaluate_gate(["b7"], s, GatePolicy.STRICT).allowed
+    s.add(type=ClaimType.INFERENCE, text="8", premises=["b7"], source=SRC, step=1)
+    _set(s, "b8", Status.VERIFIED)
+    assert evaluate_gate(["b8"], s, GatePolicy.STRICT).allowed
+
+
+def test_an_answer_resting_only_on_givens_is_blocked(s: BeliefStore):
+    """The givens are the task's premises; an answer needs a claim that states it."""
+    d = evaluate_gate(["b7"], s, GatePolicy.STANDARD)
+    assert not d.allowed and d.blocking == []
+    assert d.reasons == [
+        "final answer rests only on the task's givens; rest it on the claim that states it"
+    ]
+    assert evaluate_gate(["b7"], s, GatePolicy.PERMISSIVE).allowed
 
 
 def test_unchecked_premise_blocks_verified_conclusion_in_standard(s: BeliefStore):

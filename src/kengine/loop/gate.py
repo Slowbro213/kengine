@@ -37,6 +37,11 @@ def evaluate_gate(
     if not preconditions and policy != GatePolicy.PERMISSIVE:
         reasons.append("final answer cites no supporting claims")
     known = [p for p in dict.fromkeys(preconditions) if view.exists(p)]
+    only_givens = all(view.get(p).claim.type == ClaimType.GIVEN for p in known)
+    if known and only_givens and policy != GatePolicy.PERMISSIVE:
+        reasons.append(
+            "final answer rests only on the task's givens; rest it on the claim that states it"
+        )
     for p in dict.fromkeys(preconditions):
         if not view.exists(p):
             blocking.append(p)

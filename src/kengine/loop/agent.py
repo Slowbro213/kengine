@@ -215,7 +215,11 @@ class Agent:
                 again = self._formalize(messages, len(kept), 0)
                 for i, why in redo.items():
                     new = again.get(i)
-                    if new is not None and _accepts(formal, i, new):
+                    if (
+                        new is not None
+                        and says_everything(new) is None
+                        and _accepts(formal, i, new)
+                    ):
                         fixed[i] = (formal[i], why)
                         formal[i] = new
         ids: dict[int, str] = {}
