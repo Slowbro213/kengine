@@ -79,7 +79,7 @@ class Formal(BaseModel):
     @field_validator("statements", mode="before")
     @classmethod
     def _canonical(cls, value: object) -> object:
-        if not isinstance(value, (list, tuple)):
+        if not isinstance(value, list | tuple):
             return value
         out: list[str] = []
         for text in value:  # pyright: ignore[reportUnknownVariableType]

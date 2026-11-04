@@ -160,3 +160,23 @@ def test_default_checkers_include_logic():
         "restatement",
         "logic",
     ]
+
+
+def test_a_sum_naming_a_new_quantity_is_left_to_arithmetic():
+    s = store()
+    b1 = given(s, "10 on Saturday", "sold_sat = 10")
+    b2 = given(s, "15 on Sunday", "sold_sun = 15")
+    v = check(s, add(s, ClaimType.INFERENCE, [b1, b2], "sold_total = 25"))
+    assert (v.outcome, v.status) == (Outcome.UNKNOWN, None)
+    assert v.explanation == (
+        "can't check: nothing it cites says what sold_total is. If you worked it out, write "
+        "the calculation as a computation; if a given defines it, cite that given"
+    )
+
+
+def test_a_wrong_number_for_a_known_quantity_still_fails():
+    s = store()
+    b1 = given(s, "10 on Saturday", "sold_sat = 10")
+    b2 = given(s, "Sunday sold 5 more", "sold_sun = sold_sat + 5")
+    v = check(s, add(s, ClaimType.INFERENCE, [b1, b2], "sold_sun = 14"))
+    assert (v.outcome, v.status) == (Outcome.FAIL, Status.CONTRADICTED)

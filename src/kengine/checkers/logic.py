@@ -6,6 +6,10 @@ another premise fails with a counterexample. A fact is checked against everythin
 way") is verified only if X is open, and every given has a formal form; otherwise a given
 we couldn't translate might settle it.
 
+A step that names a new number (`total = 25`) that nothing it cites defines is left to
+arithmetic: the sum lives in the model's working, and the logic checker would only find
+that `total` could be anything.
+
 The givens' formal forms are the model's translation (FORMALIZE). A `verified` here means
 "follows in the fragment from those forms". The audit trail records them, so a
 mistranslation can be found.
@@ -18,7 +22,13 @@ from collections.abc import Sequence
 from kengine.beliefs.records import BeliefRecord
 from kengine.beliefs.status import TERMINAL, Status
 from kengine.checkers.base import BeliefView, CheckerKind, Outcome, Verdict
-from kengine.claims.formal import FormalSyntaxError, Statement, parse_statements
+from kengine.claims.formal import (
+    Compare,
+    FormalSyntaxError,
+    Statement,
+    atoms_of,
+    parse_statements,
+)
 from kengine.claims.schema import Claim, ClaimType, Formal
 from kengine.logic.entail import decide
 from kengine.logic.render import render_world
@@ -34,6 +44,21 @@ def _has(ids: Sequence[str]) -> str:
 
 def _statements(formal: Formal) -> list[Statement]:
     return [s for text in formal.statements for s in parse_statements(text)]
+
+
+def _undefined_numbers(premises: Sequence[Statement], goal: Sequence[Statement]) -> list[str]:
+    """The numeric names in `goal` that no premise mentions."""
+    known = {a.pred for s in premises for lit in (*s.body, *s.head) for a in atoms_of(lit)}
+    return list(
+        dict.fromkeys(
+            a.pred
+            for s in goal
+            for lit in (*s.body, *s.head)
+            if isinstance(lit.atom, Compare)
+            for a in atoms_of(lit)
+            if a.pred not in known
+        )
+    )
 
 
 def _holds(rec: BeliefRecord) -> bool:
@@ -149,6 +174,16 @@ class LogicChecker:
                 None,
                 f"can't check: {_ids(informal)} {_has(informal)} no formal form, and {alone} "
                 f"alone allow {world}",
+            )
+        undefined = _undefined_numbers(premises, goal)
+        if undefined:
+            verb = "is" if len(undefined) == 1 else "are"
+            return self._verdict(
+                Outcome.UNKNOWN,
+                None,
+                f"can't check: nothing it cites says what {', '.join(undefined)} {verb}. If you "
+                "worked it out, write the calculation as a computation; if a given defines it, "
+                "cite that given",
             )
         cites = _ids(formal_ids) if formal_ids else "its premises"
         return self._verdict(
