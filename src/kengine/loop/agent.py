@@ -158,6 +158,8 @@ class Agent:
         self._signatures: list[frozenset[str]] = []
         self._blocked_answer: str | None = None
         self._last_blocked = False
+        # Under the load-bearing scope: claims not checked yet because nothing rested on them.
+        self._skipped: set[str] = set()
 
     @property
     def store(self) -> BeliefStore:
@@ -365,8 +367,11 @@ class Agent:
     def _check(self, preconditions: Sequence[str], step: _Step) -> None:
         scope = step.new_ids
         if self.profile.check_scope == CheckScope.LOAD_BEARING:
-            closure = set(self.store.premise_closure(preconditions))
-            scope = [i for i in scope if i in closure]
+            # A claim skipped because nothing rested on it yet is checked once something does.
+            self._skipped.update(step.new_ids)
+            closure = self.store.premise_closure(preconditions)
+            scope = [i for i in closure if i in self._skipped]
+            self._skipped.difference_update(scope)
         for id in scope:
             for checker in self.checkers:
                 record = self.store.get(id)

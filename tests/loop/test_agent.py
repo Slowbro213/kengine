@@ -251,6 +251,19 @@ def test_load_bearing_scope_only_checks_answer_closure(tmp_path: Path):
     assert store.get("b1").status == Status.UNCHECKED
 
 
+def test_load_bearing_scope_checks_a_skipped_claim_once_an_answer_rests_on_it(tmp_path: Path):
+    script = [
+        think(),
+        extract_json([comp("c1", "2+2", "4")], CONTINUE),
+        think(),
+        extract_json([], final("4", ["b1"])),
+    ]
+    agent, _ = make_agent(script, "quick", tmp_path)
+    r = agent.run(Task(goal="2+2?"))
+    assert (r.status, r.answer) == ("answered", "4")
+    assert Session.open(r.session_dir).store.get("b1").status == Status.VERIFIED
+
+
 def test_unresolvable_premise_link_removed_with_issue(tmp_path: Path):
     script = [
         think(),
