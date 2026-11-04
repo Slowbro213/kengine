@@ -9,7 +9,9 @@
 
 Names are case-insensitive. `x`, `y`, `z`, `u`, `v` and `w`, optionally followed by
 digits, are variables, universally quantified over their statement. Every other name is a
-constant, predicate or function.
+constant, predicate or function. A name may start with digits (`2008_olympics`), a whole
+number may be an argument (`born_in(ann, 1984)`), and apostrophes inside a name are dropped
+(`china's_capital` is `chinas_capital`): models write all three.
 
 Two conveniences go beyond the spec's "conjunction implies one literal". A head may be a
 disjunction ("either A or B" is common, and `not A -> B` is an unnatural way to write it).
@@ -37,9 +39,10 @@ MAX_STATEMENT_CHARS = 300
 _CMP_OPS: frozenset[str] = frozenset({"<", "<=", ">", ">=", "=", "!="})
 _VARIABLE_RE = re.compile(r"^[uvwxyz][0-9]*$")
 _TOKEN_RE = re.compile(
-    r"\s*(?:(?P<num>\d+(?:\.\d+)?)|(?P<name>[A-Za-z_][A-Za-z0-9_]*)"
+    r"\s*(?:(?P<name>\d*[A-Za-z_][A-Za-z0-9_]*)|(?P<num>\d+(?:\.\d+)?)"
     r"|(?P<op><=|>=|!=|==|->|=>|[-+*/()<>=,&|~!:.¬∧∨→∀∃]))"
 )
+_APOSTROPHE_RE = re.compile(r"(?<=[A-Za-z0-9_])['’](?=[A-Za-z0-9_])")
 _OP_ALIASES = {
     "=>": "->", "→": "->", "∧": "&", "∨": "|", "¬": "not", "~": "not", "!": "not",
     "==": "=", "∀": "forall", "∃": "exists",
@@ -156,7 +159,7 @@ _RPAREN: _Tok = ("op", ")")
 
 def _tokenize(text: str) -> list[_Tok]:
     out: list[_Tok] = []
-    text = text.strip()
+    text = _APOSTROPHE_RE.sub("", text.strip())
     pos = 0
     while pos < len(text):
         m = _TOKEN_RE.match(text, pos)
@@ -309,7 +312,8 @@ def _literal(toks: list[_Tok]) -> Lit:
 def _args(toks: list[_Tok]) -> tuple[str, ...]:
     args: list[str] = []
     for part in _split(toks, ","):
-        if len(part) != 1 or part[0][0] != "name":
+        whole_number = len(part) == 1 and part[0][0] == "num" and part[0][1].isdigit()
+        if len(part) != 1 or (part[0][0] != "name" and not whole_number):
             raise FormalSyntaxError(f"arguments must be names, not {_show(part)!r}")
         args.append(part[0][1])
     return tuple(args)

@@ -108,3 +108,19 @@ def test_json_statements_round_trip():
         "if": ["pet(x)"],
         "then": "cat(x) | dog(x)",
     }
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("won(ann, 1992_du_maurier_classic)", ["won(ann, 1992_du_maurier_classic)"]),
+        ("born_in(ann, 1984)", ["born_in(ann, 1984)"]),
+        ("held_in(2008_summer_olympics, beijing)", ["held_in(2008_summer_olympics, beijing)"]),
+        ("capital_of(beijing, china's_republic)", ["capital_of(beijing, chinas_republic)"]),
+        ("ann’s_dog(rex)", ["anns_dog(rex)"]),
+        ("year(book) = 1984", ["year(book) = 1984"]),
+    ],
+)
+def test_names_may_start_with_digits_and_drop_apostrophes(text: str, expected: list[str]):
+    assert canonical(text) == expected
+    assert canonical(expected[0]) == expected
