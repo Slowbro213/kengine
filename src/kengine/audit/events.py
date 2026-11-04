@@ -104,6 +104,14 @@ class GivenReformalizedEvent(_Event):
     reason: str
 
 
+class ConclusionFormalizedEvent(_Event):
+    """The formal form of the statement the answer judges, translated with the givens."""
+
+    kind: Literal["conclusion_formalized"] = "conclusion_formalized"
+    text: str
+    formal: Formal | None
+
+
 class RunFinishedEvent(_Event):
     kind: Literal["run_finished"] = "run_finished"
     result: dict[str, object]
@@ -122,6 +130,7 @@ Event = Annotated[
     | FeedbackEvent
     | FormalizeEvent
     | GivenReformalizedEvent
+    | ConclusionFormalizedEvent
     | RunFinishedEvent,
     Field(discriminator="kind"),
 ]

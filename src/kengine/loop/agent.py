@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict
 
 from kengine.audit.events import (
     BeliefAddedEvent,
+    ConclusionFormalizedEvent,
     Event,
     ExtractionEvent,
     FeedbackEvent,
@@ -174,6 +175,7 @@ class Agent:
         self._skipped: set[str] = set()
         self._goal = ""
         self._reformalized: set[str] = set()  # givens translated again; each gets one retry
+        self._conclusion: Formal | None = None  # the task's conclusion, for the answer check
 
     @property
     def store(self) -> BeliefStore:
@@ -200,28 +202,41 @@ class Agent:
         is left out; it's still in the task text.
 
         A translation that says something holds of every individual is asked for again, once:
-        it's usually "All X are Y" without its "if" part."""
+        it's usually "All X are Y" without its "if" part.
+
+        The task's conclusion, if any, is translated in the same call, as the last statement,
+        so it uses the givens' names. It isn't a claim; the final gate checks the answer
+        against it."""
         self._goal = task.goal
         kept = [t for t in task.givens if len(t) <= MAX_GIVEN_CHARS]
+        texts = [*kept, task.conclusion] if task.conclusion else kept
+        c = len(kept) + 1  # the conclusion's number, when there is one
         formal: dict[int, Formal] = {}
         fixed: dict[int, tuple[Formal, str]] = {}  # number -> (old form, why)
         if self.formalize_givens and kept:
             formal = self._formalize(
-                formalize_messages(task.goal, kept, self.formal_syntax), len(kept), 0
+                formalize_messages(task.goal, texts, self.formal_syntax), len(texts), 0
             )
             redo = {i: why for i, f in formal.items() if (why := says_everything(f)) is not None}
             if redo:
-                messages = reformalize_messages(task.goal, kept, formal, redo, self.formal_syntax)
-                again = self._formalize(messages, len(kept), 0)
+                messages = reformalize_messages(task.goal, texts, formal, redo, self.formal_syntax)
+                again = self._formalize(messages, len(texts), 0)
+                givens = {i: f for i, f in formal.items() if i < c}
                 for i, why in redo.items():
                     new = again.get(i)
                     if (
                         new is not None
                         and says_everything(new) is None
-                        and _accepts(formal, i, new)
+                        and (new != formal[i] if i == c else _accepts(givens, i, new))
                     ):
                         fixed[i] = (formal[i], why)
                         formal[i] = new
+        if task.conclusion:
+            self._conclusion = formal.pop(c, None)
+            self._log(
+                ConclusionFormalizedEvent(step=0, text=task.conclusion, formal=self._conclusion)
+            )
+            fixed.pop(c, None)
         ids: dict[int, str] = {}
         for i, text in enumerate(kept, 1):
             claim = self.store.add(
@@ -491,7 +506,9 @@ class Agent:
             step.issues.append(NO_ANSWER_TEXT)
             self._last_blocked = False
             return
-        decision = evaluate_gate(preconditions, self.store, self.profile.final_gate)
+        decision = evaluate_gate(
+            preconditions, self.store, self.profile.final_gate, answer, self._conclusion
+        )
         self._log(GateEvent(step=step.n, decision=decision.model_dump(mode="json")))
         if decision.allowed:
             raise _Finished("answered", answer, decision.acted_on_assumptions)

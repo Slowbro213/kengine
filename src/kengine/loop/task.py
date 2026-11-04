@@ -18,6 +18,9 @@ class Task(BaseModel):
     # Statements the task supplies. Each becomes a `given` claim before the first step,
     # so the model can cite it instead of restating it as an unchecked fact.
     givens: list[str] = Field(default_factory=list[str])
+    # A statement the answer judges True, False or Uncertain. It's translated with the
+    # givens, and the final answer must follow from what it rests on.
+    conclusion: str | None = None
 
 
 def split_sentences(text: str) -> list[str]:

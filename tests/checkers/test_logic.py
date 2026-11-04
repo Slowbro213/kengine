@@ -2,7 +2,7 @@ from kengine.beliefs.status import Status
 from kengine.beliefs.store import BeliefStore
 from kengine.checkers import default_checkers
 from kengine.checkers.base import CheckerKind, Outcome, Verdict
-from kengine.checkers.logic import LogicChecker
+from kengine.checkers.logic import LogicChecker, answer_label, check_answer
 from kengine.claims.schema import Claim, ClaimType, Formal, FormalMode, Source, SourceKind
 
 TASK = Source(kind=SourceKind.TASK)
@@ -180,3 +180,68 @@ def test_a_wrong_number_for_a_known_quantity_still_fails():
     b2 = given(s, "Sunday sold 5 more", "sold_sun = sold_sat + 5")
     v = check(s, add(s, ClaimType.INFERENCE, [b1, b2], "sold_sun = 14"))
     assert (v.outcome, v.status) == (Outcome.FAIL, Status.CONTRADICTED)
+
+
+MAMMAL = Formal(statements=("mammal(rex)",))
+
+
+def dogs(s: BeliefStore) -> tuple[str, str]:
+    b1 = given(s, "Rex is a dog", "dog(rex)")
+    b2 = given(s, "Dogs are mammals", "dog(x) -> mammal(x)")
+    return b1, b2
+
+
+def test_answer_labels():
+    assert [answer_label(a) for a in ("True", "**false.**", " uncertain ", "Unknown")] == [
+        "True",
+        "False",
+        "Uncertain",
+        "Uncertain",
+    ]
+    assert answer_label("it's true") is None
+
+
+def test_true_must_follow_from_what_the_answer_rests_on():
+    s = store()
+    b1, b2 = dogs(s)
+    assert check_answer("True", MAMMAL, [b1, b2], s) is None
+    why = check_answer("True", MAMMAL, [b1], s)
+    assert why is not None and why.startswith("what it rests on (b1) doesn't show the conclusion")
+    assert "mammal(rex) is false" in why
+
+
+def test_a_valid_chain_to_somewhere_else_doesnt_answer_the_question():
+    s = store()
+    _, b2 = dogs(s)
+    b3 = add(s, ClaimType.INFERENCE, [b2], "dog(rex) -> mammal(rex)").id
+    why = check_answer("True", Formal(statements=("cat(rex)",)), [b3, b2], s)
+    assert why is not None and "doesn't show the conclusion" in why
+
+
+def test_false_must_contradict_what_it_rests_on():
+    s = store()
+    b1, b2 = dogs(s)
+    assert check_answer("False", Formal(statements=("not mammal(rex)",)), [b1, b2], s) is None
+    why = check_answer("False", MAMMAL, [b1, b2], s)
+    assert why == "the conclusion follows from b1, b2, so it isn't false"
+    why = check_answer("True", Formal(statements=("not mammal(rex)",)), [b1, b2], s)
+    assert why == "the conclusion is false given b1, b2, not true"
+
+
+def test_uncertain_must_be_left_open_by_the_givens():
+    s = store()
+    b1, _ = dogs(s)
+    assert check_answer("Uncertain", Formal(statements=("cat(rex)",)), [b1], s) is None
+    why = check_answer("Uncertain", MAMMAL, [b1], s)  # every given counts, not just the cited
+    assert why == "the conclusion isn't open: it follows from b1, b2"
+    given(s, "Rex is not a cat, or he's a lion")
+    why = check_answer("Uncertain", Formal(statements=("cat(rex)",)), [b1], s)
+    assert why == "can't confirm the conclusion is open: b3 has no formal form"
+
+
+def test_an_answer_that_isnt_a_label_is_refused():
+    s = store()
+    b1, b2 = dogs(s)
+    assert check_answer("Rex is a mammal", MAMMAL, [b1, b2], s) == (
+        "answer with exactly one of: True, False, Uncertain"
+    )

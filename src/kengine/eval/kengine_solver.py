@@ -60,6 +60,7 @@ class KengineSolver:
                 documents=item.documents,
                 answer_format=item.answer_format,
                 givens=item.givens,
+                conclusion=item.conclusion,
             )
             r = agent.run(task)
             excerpt = session_excerpt(session)

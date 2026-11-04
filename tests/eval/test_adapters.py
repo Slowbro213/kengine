@@ -54,7 +54,9 @@ def test_folio_givens_are_the_premises_not_the_conclusion() -> None:
         "conclusion": "X is B.",
         "label": "True",
     }
-    assert folio.parse_row(row, 0).givens == ["All A are B.", "X is A."]
+    item = folio.parse_row(row, 0)
+    assert item.givens == ["All A are B.", "X is A."]
+    assert item.conclusion == "X is B."
 
 
 def test_hotpotqa_has_no_givens() -> None:

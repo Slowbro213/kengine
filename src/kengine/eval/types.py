@@ -22,6 +22,8 @@ class EvalItem(BaseModel):
     answer_format: str
     # Statements the task supplies; the kengine solver seeds them as `given` claims.
     givens: list[str] = []
+    # The statement a True/False/Uncertain answer judges (folio's conclusion).
+    conclusion: str | None = None
 
 
 SolveStatus = Literal["answered", "abstained", "partial", "blocked", "error"]

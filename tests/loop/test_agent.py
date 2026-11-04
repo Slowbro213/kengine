@@ -544,3 +544,31 @@ def test_a_retranslation_that_still_says_everything_is_rejected(tmp_path: Path):
     agent.run(Task(goal="g", givens=SHAPES))
     formal = agent.store.get("b1").claim.formal
     assert formal is not None and formal.statements == ("four_sided(x)",)
+
+
+def test_the_answer_is_checked_against_the_conclusion(tmp_path: Path):
+    inference = claim("c1", "inference", "Tile is a shape", ["b1", "b2"])
+    inference["formal"] = {"statements": ["shape(tile)"]}
+    agent, backend = formal_agent(
+        [
+            formalize_json(
+                (1, ["four_sided(x) -> shape(x)"]), (2, ["four_sided(tile)"]), (3, ["shape(tile)"])
+            ),
+            think(),
+            extract_json([inference], final("False", ["c1"])),
+            think(),
+            extract_json([], final("True", ["b3"])),
+        ],
+        tmp_path,
+    )
+    task = Task(goal="g", givens=SHAPES[:2], conclusion="Tile is a shape.")
+    r = agent.run(task)
+    assert (r.status, r.answer) == ("answered", "True")
+    assert "3. Tile is a shape." in backend.calls[0].messages[-1].content
+    assert [c.claim.type for c in agent.store.all()].count(ClaimType.GIVEN) == 2
+    (event,) = [e for e in agent.session.log.read() if e.kind == "conclusion_formalized"]
+    assert event.formal is not None and event.formal.statements == ("shape(tile)",)  # type: ignore[union-attr]
+    gates = [e for e in agent.session.log.read() if e.kind == "gate"]
+    assert gates[0].decision["reasons"] == [  # type: ignore[union-attr]
+        "the conclusion follows from b3, so it isn't false"
+    ]

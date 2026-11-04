@@ -3,7 +3,7 @@ import pytest
 from kengine.beliefs.status import Status
 from kengine.beliefs.store import BeliefStore
 from kengine.checkers.base import CheckerKind, Outcome, Verdict
-from kengine.claims.schema import ClaimType, Source, SourceKind
+from kengine.claims.schema import ClaimType, Formal, Source, SourceKind
 from kengine.loop.gate import evaluate_gate
 from kengine.loop.profiles import GatePolicy
 
@@ -90,3 +90,48 @@ def test_empty_preconditions(s: BeliefStore):
 def test_unknown_id_blocks(s: BeliefStore):
     d = evaluate_gate(["b99"], s, GatePolicy.PERMISSIVE)
     assert not d.allowed and d.blocking == ["b99"] and d.reasons == ["b99: unknown claim"]
+
+
+def _dogs() -> BeliefStore:
+    """b1 "Rex is a dog", b2 "Dogs are mammals" (givens), b3 "Rex is a dog" (verified)."""
+    store = BeliefStore.open(":memory:")
+    task = Source(kind=SourceKind.TASK)
+    for text, form in (("Rex is a dog", "dog(rex)"), ("Dogs are mammals", "dog(x) -> mammal(x)")):
+        store.add(
+            type=ClaimType.GIVEN,
+            text=text,
+            premises=[],
+            source=task,
+            step=0,
+            formal=Formal(statements=(form,)),
+        )
+    store.add(
+        type=ClaimType.INFERENCE,
+        text="Rex is a dog",
+        premises=["b1"],
+        source=SRC,
+        step=1,
+        formal=Formal(statements=("dog(rex)",)),
+    )
+    _set(store, "b3", Status.VERIFIED)
+    return store
+
+
+MAMMAL = Formal(statements=("mammal(rex)",))
+
+
+def test_an_answer_must_show_the_conclusion():
+    s = _dogs()
+    d = evaluate_gate(["b3"], s, GatePolicy.STANDARD, "True", MAMMAL)
+    assert not d.allowed and d.blocking == []
+    assert d.reasons[0].startswith("what it rests on (b1, b3) doesn't show the conclusion")
+    assert evaluate_gate(["b3"], s, GatePolicy.STANDARD).allowed  # no conclusion: no check
+    assert evaluate_gate(["b3"], s, GatePolicy.PERMISSIVE, "True", MAMMAL).allowed
+
+
+def test_with_a_conclusion_an_answer_may_rest_on_givens():
+    """The answer check proves the conclusion from them, so something was checked."""
+    s = _dogs()
+    assert evaluate_gate(["b1", "b2"], s, GatePolicy.STRICT, "True", MAMMAL).allowed
+    d = evaluate_gate(["b1", "b2"], s, GatePolicy.STANDARD, "False", MAMMAL)
+    assert d.reasons == ["the conclusion follows from b1, b2, so it isn't false"]

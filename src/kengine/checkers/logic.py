@@ -10,6 +10,10 @@ A step that names a new number (`total = 25`) that nothing it cites defines is l
 arithmetic: the sum lives in the model's working, and the logic checker would only find
 that `total` could be anything.
 
+A True/False/Uncertain answer about a conclusion is checked too (`check_answer`): True must
+follow from the claims the answer rests on, False must contradict them, and Uncertain must
+be left open by the givens. A valid chain that ends somewhere else doesn't count.
+
 The givens' formal forms are the model's translation (FORMALIZE). A `verified` here means
 "follows in the fragment from those forms". The audit trail records them, so a
 mistranslation can be found.
@@ -76,6 +80,14 @@ def _trusted(view: BeliefView, exclude: str) -> list[BeliefRecord]:
     ]
 
 
+def _informal_givens(view: BeliefView) -> list[str]:
+    return [
+        r.claim.id
+        for r in view.all()
+        if r.claim.type == ClaimType.GIVEN and r.status not in TERMINAL and r.claim.formal is None
+    ]
+
+
 class LogicChecker:
     id = "logic"
     kind = CheckerKind.DETERMINISTIC
@@ -133,13 +145,7 @@ class LogicChecker:
                     f"it isn't open: its negation follows from {_ids(core)}",
                     core,
                 )
-            informal = [
-                r.claim.id
-                for r in view.all()
-                if r.claim.type == ClaimType.GIVEN
-                and r.status not in TERMINAL
-                and r.claim.formal is None
-            ]
+            informal = _informal_givens(view)
             if informal:
                 return self._verdict(
                     Outcome.UNKNOWN,
@@ -212,3 +218,76 @@ class LogicChecker:
             evidence=list(dict.fromkeys(evidence)),
             counterexample=counterexample,
         )
+
+
+ANSWER_LABELS = ("True", "False", "Uncertain")
+
+
+def answer_label(answer: str) -> str | None:
+    """`answer` as one of ANSWER_LABELS ("**true.**" is True), or None."""
+    word = "".join(ch for ch in answer.lower() if ch.isalpha())
+    aliases = {"unknown": "Uncertain"}
+    return next((label for label in ANSWER_LABELS if label.lower() == word), aliases.get(word))
+
+
+def check_answer(
+    answer: str, conclusion: Formal, rests_on: Sequence[str], view: BeliefView
+) -> str | None:
+    """Why a True/False/Uncertain answer about `conclusion` doesn't stand, or None if it does.
+
+    `rests_on` is everything the answer rests on, its citations and their premises."""
+    label = answer_label(answer)
+    if label is None:
+        return f"answer with exactly one of: {', '.join(ANSWER_LABELS)}"
+    goal = _statements(conclusion)
+    if label == "Uncertain":
+        base = _trusted(view, exclude="")
+    else:
+        records = [view.get(id) for id in rests_on]
+        base = [r for r in records if r.status not in TERMINAL and _holds(r)]
+    premises: list[Statement] = []
+    owners: list[str] = []
+    for rec in base:
+        assert rec.claim.formal is not None
+        for s in _statements(rec.claim.formal):
+            premises.append(s)
+            owners.append(rec.claim.id)
+    d = decide(premises, goal)
+    core = _ids([owners[i] for i in d.core])
+    if d.kind == "inconsistent":
+        return f"can't check it: {core} contradict each other"
+    if d.kind == "unknown":
+        return f"the answer check gave up: {d.reason}"
+
+    if label == "Uncertain":
+        if d.kind == "entailed":
+            return f"the conclusion isn't open: it follows from {core}"
+        if d.kind == "refuted":
+            return f"the conclusion isn't open: its negation follows from {core}"
+        informal = _informal_givens(view)
+        if informal:
+            return (
+                f"can't confirm the conclusion is open: {_ids(informal)} {_has(informal)} no "
+                "formal form"
+            )
+        return None
+
+    want = "entailed" if label == "True" else "refuted"
+    if d.kind == want:
+        return None
+    if d.kind == "refuted":
+        return f"the conclusion is false given {core}, not true"
+    if d.kind == "entailed":
+        return f"the conclusion follows from {core}, so it isn't false"
+    cited = _ids([r.claim.id for r in base]) if base else "nothing formal"
+    informal = [id for id in rests_on if not _holds(view.get(id))]
+    note = f" ({_ids(informal)} {_has(informal)} no formal form)" if informal else ""
+    if label == "True":
+        return (
+            f"what it rests on ({cited}) doesn't show the conclusion: it allows "
+            f"{render_world(d.world)}{note}. Rest the answer on a claim that states the conclusion"
+        )
+    return (
+        f"what it rests on ({cited}) doesn't rule the conclusion out{note}. Rest the answer on a "
+        "claim that states the conclusion's negation"
+    )
