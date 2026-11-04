@@ -98,7 +98,7 @@ From `scripts/block_reasons.py`: the beliefs blocking each blocked item at its l
 
 Two `standard` items ended without any gate: the budget ran out first.
 
-**A bug: steps that are never checked.** Under `quick`, the loop checks only the new claims the step's answer rests on. A claim that wasn't load-bearing when it was added is skipped, and nothing checks it later, even after a final answer comes to rest on it. It then stays unchecked and blocks every later gate. This happened in 7 of the 22 blocked `quick` items. `standard` checks every new claim, so it isn't affected.
+**A bug: steps that are never checked.** Under `quick`, the loop checks only the new claims the step's answer rests on. A claim that wasn't load-bearing when it was added is skipped, and nothing checks it later, even after a final answer comes to rest on it. It then stays unchecked and blocks every later gate. This happened in 7 of the 22 blocked `quick` items. `standard` checks every new claim, so it isn't affected. Fixed after this checkpoint, in 464c70e.
 
 **Is "doesn't follow" a real error or a bad translation?** I checked six by hand, sampled at random from `quick`:
 

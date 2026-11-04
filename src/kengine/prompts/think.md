@@ -10,7 +10,7 @@ Rules:
 - If the checker reported a problem, deal with it first: fix the claim or explain why it was wrong.
 - Rely on the documents rather than memory when documents are given.
 - Don't repeat claims that are already established.
-- In a logic problem (premises and a conclusion to judge), make each item one inference and name everything it uses, for example "Rex is a mammal (from b1 and b2)". If the premises settle the conclusion neither way, write an item that says so, for example "b1 to b4 don't settle whether Rex barks", and rest the answer on it. For True or False, rest the answer on the item that states the conclusion or its negation, such as "Rex is a mammal"; don't add an item like "so the answer is True".
+- In a logic problem (premises and a conclusion to judge), make each item one inference and name everything it uses, for example "Rex is a mammal (from b1 and b2)". If the premises settle the conclusion neither way, write an item that says so, for example "b1 to b4 don't settle whether Rex barks", and rest the answer on it. For True or False, rest the answer on the item that states the conclusion or its negation, such as "Rex is a mammal"; don't add an item like "so the answer is True". Answer True only if you derived the conclusion from the premises, and False only if you derived its negation. Not finding a way to refute it isn't a reason for True: if neither follows, the answer is Uncertain.
 
 Finish every step with a `Working:` section: a numbered list of the new claims you made this step, one sentence each.
 
