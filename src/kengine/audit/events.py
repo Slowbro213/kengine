@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 from kengine.backend.types import Completion, Message
 from kengine.beliefs.store import StatusChange
 from kengine.checkers.base import Verdict
-from kengine.claims.schema import Claim
+from kengine.claims.schema import Claim, Formal
 
 
 def _now() -> datetime:
@@ -93,6 +93,17 @@ class FormalizeEvent(_Event):
     errors: list[str]
 
 
+class GivenReformalizedEvent(_Event):
+    """A given translated again: when its form said something held of everything, or when a
+    step resting on it alone didn't follow."""
+
+    kind: Literal["given_reformalized"] = "given_reformalized"
+    belief_id: str
+    old: Formal | None
+    new: Formal
+    reason: str
+
+
 class RunFinishedEvent(_Event):
     kind: Literal["run_finished"] = "run_finished"
     result: dict[str, object]
@@ -110,6 +121,7 @@ Event = Annotated[
     | GateEvent
     | FeedbackEvent
     | FormalizeEvent
+    | GivenReformalizedEvent
     | RunFinishedEvent,
     Field(discriminator="kind"),
 ]

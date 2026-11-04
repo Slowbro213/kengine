@@ -153,3 +153,18 @@ def test_add_with_formal_persists(tmp_path: Path):
     again = BeliefStore.open(path)
     formal = again.get("b1").claim.formal
     assert formal is not None and formal.statements == ("dog(rex)",)
+
+
+def test_a_givens_formal_form_can_be_replaced(tmp_path: Path):
+    path = tmp_path / "b.sqlite"
+    s = BeliefStore.open(path)
+    task = Source(kind=SourceKind.TASK)
+    s.add(type=ClaimType.GIVEN, text="Dogs are mammals", premises=[], source=task, step=0)
+    s.add(type=ClaimType.FACT, text="Rex is a dog", premises=[], source=SRC, step=1)
+    claim = s.set_formal("b1", Formal(statements=("dog(x) -> mammal(x)",)))
+    assert claim.formal is not None and s.get("b1").claim == claim
+    with pytest.raises(ValueError, match="only a given"):
+        s.set_formal("b2", Formal(statements=("dog(rex)",)))
+    s.close()
+    formal = BeliefStore.open(path).get("b1").claim.formal
+    assert formal is not None and formal.statements == ("dog(x) -> mammal(x)",)

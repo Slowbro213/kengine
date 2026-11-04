@@ -1,5 +1,5 @@
 from kengine.claims.formal import Statement, parse_statements
-from kengine.logic.entail import decide
+from kengine.logic.entail import consistent, decide
 
 
 def st(*texts: str) -> list[Statement]:
@@ -79,3 +79,8 @@ def test_grounding_blowup_is_unknown_fast():
 def test_empty_premises():
     assert decide([], st("dog(rex) | not dog(rex)")).kind == "entailed"
     assert decide([], st("dog(rex)")).kind == "open"
+
+
+def test_consistent():
+    assert consistent(st("dog(rex)", "dog(x) -> mammal(x)"))
+    assert not consistent(st("dog(rex)", "not dog(rex)"))

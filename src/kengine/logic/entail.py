@@ -71,6 +71,11 @@ def decide(premises: Sequence[Statement], goal: Sequence[Statement]) -> Decision
         return Decision(kind="unknown", reason=str(e))
 
 
+def consistent(premises: Sequence[Statement]) -> bool:
+    """False only when the premises are shown to contradict each other."""
+    return decide(premises, ()).kind != "inconsistent"
+
+
 def _decide(premises: Sequence[Statement], goal: Sequence[Statement]) -> Decision:
     statements = [*premises, *goal]
     _check_signature(statements)

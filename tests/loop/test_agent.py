@@ -430,3 +430,101 @@ def test_formalize_backend_error_retries_once(tmp_path: Path):
     )
     assert agent.run(Task(goal="g", givens=["Rex is a dog."])).status == "budget_exhausted"
     assert sleeps == [5.0]
+
+
+def formal_agent(script: list[ScriptedReply], tmp: Path) -> tuple[Agent, ScriptedBackend]:
+    backend = ScriptedBackend(script)
+    agent = Agent(
+        backend=backend,
+        roles=RolesConfig(),
+        profile=get_profile("standard").model_copy(update={"n_samples": 1}),
+        context_budget=8000,
+        checkers=default_checkers(),
+        session=Session.create(tmp),
+        sleep=Sleeps(),
+        formalize_givens=True,
+    )
+    return agent, backend
+
+
+SHAPES = ["All four-sided things are shapes.", "Tile is four-sided.", "Is Tile a shape?"]
+
+
+def test_a_given_that_says_everything_is_translated_again(tmp_path: Path):
+    inference = claim("c1", "inference", "Tile is a shape", ["b1", "b2"])
+    inference["formal"] = {"statements": ["shape(tile)"]}
+    agent, backend = formal_agent(
+        [
+            formalize_json((1, ["four_sided(x)"]), (2, ["four_sided(tile)"]), (3, [])),
+            formalize_json((1, ["four_sided(x) -> shape(x)"])),
+            think(),
+            extract_json([inference], final("True", ["c1"])),
+        ],
+        tmp_path,
+    )
+    r = agent.run(Task(goal="g", givens=SHAPES))
+    assert (r.status, r.answer) == ("answered", "True")
+    asked = backend.calls[1]
+    assert asked.schema_name == "Formalization"
+    assert (
+        "1. All four-sided things are shapes.\n   now: `four_sided(x)`"
+        in asked.messages[-1].content
+    )
+    assert "Statement 1: `four_sided(x)` says it holds for every individual" in (
+        asked.messages[-1].content
+    )
+    formal = agent.store.get("b1").claim.formal
+    assert formal is not None and formal.statements == ("four_sided(x) -> shape(x)",)
+    (event,) = [e for e in agent.session.log.read() if e.kind == "given_reformalized"]
+    assert event.belief_id == "b1"  # type: ignore[union-attr]
+
+
+def test_a_given_is_translated_again_when_a_step_resting_on_it_alone_fails(tmp_path: Path):
+    restated = claim("c1", "inference", "Four-sided things are shapes", ["b1"])
+    restated["formal"] = {"statements": ["four_sided(x) -> shape(x)"]}
+    agent, backend = formal_agent(
+        [
+            formalize_json(
+                (1, ["four_sided(x) -> polygon(x)"]), (2, ["four_sided(tile)"]), (3, [])
+            ),
+            think(),
+            extract_json([restated], CONTINUE),
+            formalize_json((1, ["four_sided(x) -> shape(x)"])),
+            think(),
+            extract_json([], CONTINUE),
+        ],
+        tmp_path,
+    )
+    agent.limits = Limits(max_steps=2)
+    agent.run(Task(goal="g", givens=SHAPES))
+    assert [c.schema_name for c in backend.calls][:4] == [
+        "Formalization",
+        None,
+        "Extraction",
+        "Formalization",
+    ]
+    assert "a step resting on it alone didn't follow" in backend.calls[3].messages[-1].content
+    assert "Four-sided things are shapes" not in backend.calls[3].messages[-1].content
+    assert agent.store.get("b4").status == Status.VERIFIED
+
+
+def test_a_translation_that_makes_the_givens_contradict_is_rejected(tmp_path: Path):
+    restated = claim("c1", "inference", "Tile is a shape", ["b1"])
+    restated["formal"] = {"statements": ["shape(tile)"]}
+    agent, _ = formal_agent(
+        [
+            formalize_json((1, ["polygon(tile)"]), (2, ["not shape(tile)"]), (3, [])),
+            think(),
+            extract_json([restated], CONTINUE),
+            formalize_json((1, ["shape(tile)"])),
+            think(),
+            extract_json([], CONTINUE),
+        ],
+        tmp_path,
+    )
+    agent.limits = Limits(max_steps=2)
+    agent.run(Task(goal="g", givens=SHAPES))
+    formal = agent.store.get("b1").claim.formal
+    assert formal is not None and formal.statements == ("polygon(tile)",)
+    assert not [e for e in agent.session.log.read() if e.kind == "given_reformalized"]
+    assert agent.store.get("b4").status == Status.UNCHECKED

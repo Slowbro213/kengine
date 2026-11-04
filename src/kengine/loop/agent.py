@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 import time
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
@@ -18,6 +18,7 @@ from kengine.audit.events import (
     FeedbackEvent,
     FormalizeEvent,
     GateEvent,
+    GivenReformalizedEvent,
     ModelCallEvent,
     RunFinishedEvent,
     SessionStartedEvent,
@@ -37,13 +38,20 @@ from kengine.backend.types import (
 )
 from kengine.beliefs.status import TERMINAL
 from kengine.beliefs.store import BeliefStore, StatusChange
-from kengine.checkers.base import Checker, Verdict
+from kengine.checkers.base import Checker, Outcome, Verdict
 from kengine.claims.extraction import ExtractedClaim, Extraction, to_formal
-from kengine.claims.formal import FormalSyntax
-from kengine.claims.formalize import Formalization, formalize_messages, read_formalization
-from kengine.claims.schema import ClaimType, Formal, Source, SourceKind
+from kengine.claims.formal import FormalSyntax, Statement, parse_statements
+from kengine.claims.formalize import (
+    Formalization,
+    formalize_messages,
+    read_formalization,
+    reformalize_messages,
+    says_everything,
+)
+from kengine.claims.schema import Claim, ClaimType, Formal, Source, SourceKind
 from kengine.claims.voting import VoteResult, default_k, vote
 from kengine.config import RolesConfig
+from kengine.logic.entail import consistent
 from kengine.loop.context import (
     ContextOverflowError,
     StepSummary,
@@ -64,6 +72,10 @@ CUT_OFF = "your reasoning was cut off before the Working section; be more concis
 NO_CLAIMS = "could not turn your reasoning into claims; keep the Working list short and numbered"
 NO_ANSWER_TEXT = "final answer had no text"
 _BELIEF_ID_RE = re.compile(r"\bb\d+\b")
+LONE_GIVEN_FAILED = (
+    "a step resting on it alone didn't follow from this translation; check that it says "
+    "everything the sentence says"
+)
 
 
 class Limits(BaseModel):
@@ -160,6 +172,8 @@ class Agent:
         self._last_blocked = False
         # Under the load-bearing scope: claims not checked yet because nothing rested on them.
         self._skipped: set[str] = set()
+        self._goal = ""
+        self._reformalized: set[str] = set()  # givens translated again; each gets one retry
 
     @property
     def store(self) -> BeliefStore:
@@ -183,9 +197,28 @@ class Agent:
     def _seed_givens(self, task: Task) -> None:
         """The task's statements become `given` claims b1, b2, ... before the first step,
         each with a formal form when FORMALIZE gives one. A statement too long for a claim
-        is left out; it's still in the task text."""
+        is left out; it's still in the task text.
+
+        A translation that says something holds of every individual is asked for again, once:
+        it's usually "All X are Y" without its "if" part."""
+        self._goal = task.goal
         kept = [t for t in task.givens if len(t) <= MAX_GIVEN_CHARS]
-        formal = self._formalize(task, kept) if self.formalize_givens and kept else {}
+        formal: dict[int, Formal] = {}
+        fixed: dict[int, tuple[Formal, str]] = {}  # number -> (old form, why)
+        if self.formalize_givens and kept:
+            formal = self._formalize(
+                formalize_messages(task.goal, kept, self.formal_syntax), len(kept), 0
+            )
+            redo = {i: why for i, f in formal.items() if (why := says_everything(f)) is not None}
+            if redo:
+                messages = reformalize_messages(task.goal, kept, formal, redo, self.formal_syntax)
+                again = self._formalize(messages, len(kept), 0)
+                for i, why in redo.items():
+                    new = again.get(i)
+                    if new is not None and _accepts(formal, i, new):
+                        fixed[i] = (formal[i], why)
+                        formal[i] = new
+        ids: dict[int, str] = {}
         for i, text in enumerate(kept, 1):
             claim = self.store.add(
                 type=ClaimType.GIVEN,
@@ -195,11 +228,17 @@ class Agent:
                 step=0,
                 formal=formal.get(i),
             )
+            ids[i] = claim.id
             self._log(BeliefAddedEvent(step=0, claim=claim))
+        for i, (old, why) in fixed.items():
+            self._reformalized.add(ids[i])
+            self._log(
+                GivenReformalizedEvent(step=0, belief_id=ids[i], old=old, new=formal[i], reason=why)
+            )
 
-    def _formalize(self, task: Task, statements: list[str]) -> dict[int, Formal]:
-        """One FORMALIZE call. Any failure leaves the givens informal; it never ends the run."""
-        messages = formalize_messages(task.goal, statements, self.formal_syntax)
+    def _formalize(self, messages: list[Message], n: int, step: int) -> dict[int, Formal]:
+        """One FORMALIZE call over `n` statements. Any failure leaves the givens informal; it
+        never ends the run."""
         for attempt in (1, 2):
             t0 = self.clock()
             try:
@@ -208,20 +247,66 @@ class Agent:
                 )
             except StructuredOutputError as e:
                 if e.completion is not None:
-                    self._record_call(messages, e.completion, "formalize", 0, t0)
-                self._log(FormalizeEvent(step=0, ok=False, raw=e.raw, errors=[str(e)]))
+                    self._record_call(messages, e.completion, "formalize", step, t0)
+                self._log(FormalizeEvent(step=step, ok=False, raw=e.raw, errors=[str(e)]))
                 return {}
             except BackendError as e:
                 if attempt == 1:
                     self.sleep(self.retry_delay_s)
                     continue
-                self._log(FormalizeEvent(step=0, ok=False, raw=None, errors=[str(e)]))
+                self._log(FormalizeEvent(step=step, ok=False, raw=None, errors=[str(e)]))
                 return {}
-            self._record_call(messages, completion, "formalize", 0, t0)
-            formal, errors = read_formalization(parsed, len(statements))
-            self._log(FormalizeEvent(step=0, ok=True, raw=completion.content, errors=errors))
+            self._record_call(messages, completion, "formalize", step, t0)
+            formal, errors = read_formalization(parsed, n)
+            self._log(FormalizeEvent(step=step, ok=True, raw=completion.content, errors=errors))
             return formal
         return {}
+
+    def _reformalize(self, given: str, failed: Verdict, step: _Step) -> bool:
+        """Translate `given` again, without showing the step that failed against it. Returns
+        whether the new form was taken."""
+        self._reformalized.add(given)
+        givens = [
+            r
+            for r in self.store.all()
+            if r.claim.type == ClaimType.GIVEN and r.claim.source.kind == SourceKind.TASK
+        ]
+        i = [r.claim.id for r in givens].index(given) + 1
+        current = {n: r.claim.formal for n, r in enumerate(givens, 1) if r.claim.formal}
+        messages = reformalize_messages(
+            self._goal,
+            [r.claim.text for r in givens],
+            current,
+            {i: LONE_GIVEN_FAILED},
+            self.formal_syntax,
+        )
+        new = self._formalize(messages, len(givens), step.n).get(i)
+        if new is None or not _accepts(current, i, new):
+            return False
+        self.store.set_formal(given, new)
+        reason = f"a step resting on it alone didn't follow: {failed.explanation}"
+        self._log(
+            GivenReformalizedEvent(
+                step=step.n, belief_id=given, old=current.get(i), new=new, reason=reason
+            )
+        )
+        return True
+
+    def _lone_given(self, claim: Claim, verdict: Verdict) -> str | None:
+        """The given to translate again: the only premise of an inference the logic checker
+        found doesn't follow, when that given hasn't been translated again yet."""
+        if verdict.checker_id != "logic" or verdict.outcome != Outcome.FAIL:
+            return None
+        if verdict.status is not None or claim.type != ClaimType.INFERENCE:
+            return None
+        if len(claim.premises) != 1 or claim.premises[0] in self._reformalized:
+            return None
+        given = self.store.get(claim.premises[0])
+        if given.claim.type != ClaimType.GIVEN or given.claim.formal is None:
+            return None
+        if given.status in TERMINAL:
+            return None
+        return given.claim.id
 
     def _loop(self, task: Task) -> None:
         self._seed_givens(task)
@@ -380,6 +465,9 @@ class Agent:
                 if not checker.applies_to(record.claim):
                     continue
                 verdict = checker.check(record.claim, self.store)
+                given = self._lone_given(record.claim, verdict)
+                if given is not None and self._reformalize(given, verdict, step):
+                    verdict = checker.check(record.claim, self.store)
                 self._log(VerdictEvent(step=step.n, belief_id=id, verdict=verdict))
                 step.verdicts.append((id, verdict))
                 for change in self.store.apply_verdict(id, verdict, step.n):
@@ -500,6 +588,19 @@ class Agent:
             acted_on_assumptions=assumed,
             error=error,
         )
+
+
+def _statements(formals: Iterable[Formal]) -> list[Statement]:
+    return [s for f in formals for text in f.statements for s in parse_statements(text)]
+
+
+def _accepts(current: Mapping[int, Formal], i: int, new: Formal) -> bool:
+    """A new translation of statement `i` is taken if it changes the form and doesn't make
+    consistent givens contradict each other."""
+    if new == current.get(i):
+        return False
+    after = {**current, i: new}
+    return consistent(_statements(after.values())) or not consistent(_statements(current.values()))
 
 
 def _c_refs(claim: ExtractedClaim) -> list[str]:

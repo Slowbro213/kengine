@@ -159,6 +159,20 @@ class BeliefStore:
             return []
         return self._change(id, new, verdict.explanation, verdict, step)
 
+    def set_formal(self, id: str, formal: Formal) -> Claim:
+        """Replace a given's formal form with a new translation of the task's sentence.
+        Verdicts already given against the old form stand; the event log has both."""
+        record = self.get(id)
+        if record.claim.type != ClaimType.GIVEN:
+            raise ValueError(f"only a given's formal form can be replaced, not {id}'s")
+        claim = record.claim.model_copy(update={"formal": formal})
+        self._conn.execute(
+            "UPDATE beliefs SET claim_json = ? WHERE id = ?", (claim.model_dump_json(), id)
+        )
+        self._conn.commit()
+        self._records[id] = record.model_copy(update={"claim": claim})
+        return claim
+
     def retract(self, id: str, reason: str, step: int) -> list[StatusChange]:
         if self.get(id).status in TERMINAL:
             return []
