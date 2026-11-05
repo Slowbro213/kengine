@@ -206,7 +206,8 @@ class Agent:
         is left out; it's still in the task text.
 
         A translation that says something holds of every individual is asked for again, once:
-        it's usually "All X are Y" without its "if" part.
+        it's usually "All X are Y" without its "if" part. If it still does, the given is left
+        without a formal form.
 
         The task's conclusion, if any, is translated in the same call, as the last statement,
         so it uses the givens' names. It isn't a claim; the final gate checks the answer
@@ -217,6 +218,7 @@ class Agent:
         c = len(kept) + 1  # the conclusion's number, when there is one
         formal: dict[int, Formal] = {}
         fixed: dict[int, tuple[Formal, str]] = {}  # number -> (old form, why)
+        dropped: list[str] = []
         if self.formalize_givens and kept:
             formal = self._formalize(
                 formalize_messages(task.goal, texts, self.formal_syntax), len(texts), 0
@@ -235,6 +237,13 @@ class Agent:
                     ):
                         fixed[i] = (formal[i], why)
                         formal[i] = new
+                    elif i != c and says_everything(formal[i]) is not None:
+                        # Wrong far more often than "everything is X" is meant; an answer
+                        # could follow from it alone.
+                        del formal[i]
+                        dropped.append(f"given {i}: {why} Left without a formal form.")
+                if dropped:
+                    self._log(FormalizeEvent(step=0, ok=True, raw=None, errors=dropped))
         if task.conclusion:
             self._conclusion = formal.pop(c, None)
             self._log(

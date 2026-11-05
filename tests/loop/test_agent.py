@@ -531,7 +531,7 @@ def test_a_translation_that_makes_the_givens_contradict_is_rejected(tmp_path: Pa
     assert agent.store.get("b4").status == Status.UNCHECKED
 
 
-def test_a_retranslation_that_still_says_everything_is_rejected(tmp_path: Path):
+def test_a_given_that_still_says_everything_is_left_informal(tmp_path: Path):
     agent, _ = formal_agent(
         [
             formalize_json((1, ["four_sided(x)"]), (2, ["four_sided(tile)"]), (3, [])),
@@ -543,8 +543,9 @@ def test_a_retranslation_that_still_says_everything_is_rejected(tmp_path: Path):
     )
     agent.limits = Limits(max_steps=1)
     agent.run(Task(goal="g", givens=SHAPES))
-    formal = agent.store.get("b1").claim.formal
-    assert formal is not None and formal.statements == ("four_sided(x)",)
+    assert agent.store.get("b1").claim.formal is None
+    (event,) = [e for e in agent.session.log.read() if e.kind == "formalize" and not e.raw]  # type: ignore[union-attr]
+    assert event.errors[0].endswith("Left without a formal form.")  # type: ignore[union-attr]
 
 
 def test_the_answer_is_checked_against_the_conclusion(tmp_path: Path):
