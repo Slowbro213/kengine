@@ -6,7 +6,7 @@ claims."""
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
@@ -38,11 +38,9 @@ def evaluate_gate(
     policy: GatePolicy,
     answer: str | None = None,
     conclusion: Formal | None = None,
-    doubtful: Mapping[str, str] | None = None,
 ) -> GateDecision:
     """Check the cited claims and everything they transitively rest on, and that `answer`
-    is right about `conclusion` when there is one. `doubtful` maps givens whose formal form
-    may say less than the sentence to why; see `check_answer`."""
+    is right about `conclusion` when there is one."""
     blocking: list[str] = []
     assumed: list[str] = []
     reasons: list[str] = []
@@ -74,7 +72,7 @@ def evaluate_gate(
                 reasons.append(f"{id} is {record.status}")
     if judged and known:
         assert conclusion is not None and answer is not None
-        why = check_answer(answer, conclusion, closure, view, doubtful)
+        why = check_answer(answer, conclusion, closure, view)
         if why is not None:
             reasons.append(why)
     return GateDecision(

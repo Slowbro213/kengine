@@ -12,8 +12,7 @@ empty. The result is quantifier-free, and Z3 always finishes it, up to the timeo
 
     premises ∧ ¬goal unsat  →  premises alone unsat?  inconsistent : entailed
     premises ∧ goal unsat   →  refuted
-    otherwise               →  open, with the first model as the counterexample, and
-                               both models in full as the two cases
+    otherwise               →  open, with the first model as the counterexample
 
 Numeric atoms such as `age(bob)` are uninterpreted reals, and comparisons are linear real
 arithmetic.
@@ -55,9 +54,6 @@ class Decision(BaseModel):
     core: tuple[int, ...] = ()
     # open: a case where the premises hold and the goal fails, as (ground atom, value).
     world: tuple[tuple[str, str], ...] = ()
-    # open: every ground atom's value in a case where the goal fails, then in one where it
-    # holds. Both cases satisfy the premises.
-    cases: tuple[tuple[tuple[str, str], ...], ...] = ()
     reason: str = ""
 
 
@@ -116,16 +112,12 @@ def _decide(premises: Sequence[Statement], goal: Sequence[Statement]) -> Decisio
         return Decision(kind="entailed", core=core)
     if first == "unknown" or model is None:
         return Decision(kind="unknown", reason="solver gave up (timeout)")
-    second, core, other = _check(tracked, asserted)
+    second, core, _ = _check(tracked, asserted)
     if second == "unsat":
         return Decision(kind="refuted", core=core)
-    if second == "unknown" or other is None:
+    if second == "unknown":
         return Decision(kind="unknown", reason="solver gave up (timeout)")
-    return Decision(
-        kind="open",
-        world=_world(model, enc, goal, witnesses),
-        cases=(_full(model, enc), _full(other, enc)),
-    )
+    return Decision(kind="open", world=_world(model, enc, goal, witnesses))
 
 
 def _fresh(taken: set[str]) -> str:
@@ -270,9 +262,3 @@ def _world(
                 expr = enc.atom(atom, env) if isinstance(lit.atom, Atom) else enc.real(atom, env)
                 out.setdefault(key, _value(model, expr))
     return tuple(list(out.items())[:MAX_WORLD])
-
-
-def _full(model: z3.ModelRef, enc: _Encoder) -> tuple[tuple[str, str], ...]:
-    """Every ground atom's value in `model`, in name order."""
-    exprs: dict[str, z3.ExprRef] = {**enc.bools, **enc.reals}
-    return tuple((k, _value(model, exprs[k])) for k in sorted(exprs))

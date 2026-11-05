@@ -1,6 +1,5 @@
 import json
 from pathlib import Path
-from typing import cast
 
 from kengine.audit.session import Session
 from kengine.backend.fake import ScriptedBackend, ScriptedReply
@@ -574,67 +573,3 @@ def test_the_answer_is_checked_against_the_conclusion(tmp_path: Path):
     assert gates[0].decision["reasons"] == [  # type: ignore[union-attr]
         "the conclusion follows from b3, so it isn't false"
     ]
-
-
-def scenarios_json(*broken: tuple[int, int, str]) -> ScriptedReply:
-    items = [{"case": c, "statement": n, "why": why} for c, n, why in broken]
-    return ScriptedReply(content=json.dumps({"broken": items}))
-
-
-CONVERSE = formalize_json(
-    (1, ["shape(x) -> four_sided(x)"]), (2, ["four_sided(tile)"]), (3, ["shape(tile)"])
-)
-
-
-def test_a_given_a_case_breaks_is_translated_again(tmp_path: Path):
-    agent, backend = formal_agent(
-        [
-            CONVERSE,
-            scenarios_json((1, 1, "tile is four-sided but not a shape")),
-            formalize_json((1, ["four_sided(x) -> shape(x)"])),
-            think(),
-            extract_json([], final("True", ["b1", "b2"])),
-        ],
-        tmp_path,
-    )
-    r = agent.run(Task(goal="g", givens=SHAPES[:2], conclusion="Tile is a shape."))
-    assert (r.status, r.answer) == ("answered", "True")
-    assert backend.calls[1].schema_name == "Scenarios"
-    assert "1. All four-sided things are shapes." in backend.calls[1].messages[-1].content
-    assert "- false: shape(tile)" in backend.calls[1].messages[-1].content
-    log = agent.session.log.read()
-    (scenarios,) = [e for e in log if e.kind == "scenarios"]  # entailed now: no second look
-    assert scenarios.broken == {"b1": "case 1: tile is four-sided but not a shape"}  # type: ignore[union-attr]
-    (redo,) = [e for e in log if e.kind == "given_reformalized"]
-    assert redo.reason.startswith("it allows a case that makes it false")  # type: ignore[union-attr]
-
-
-def test_uncertain_is_blocked_while_a_case_still_breaks_a_given(tmp_path: Path):
-    agent, _ = formal_agent(
-        [
-            CONVERSE,
-            scenarios_json((1, 1, "tile is four-sided but not a shape")),
-            formalize_json((1, ["shape(x) -> four_sided(x)"])),  # the same: not taken
-            scenarios_json((1, 1, "still")),
-            think(),
-            extract_json([], final("Uncertain", ["b1"])),
-        ],
-        tmp_path,
-    )
-    agent.limits = Limits(max_steps=1)
-    r = agent.run(Task(goal="g", givens=SHAPES[:2], conclusion="Tile is a shape."))
-    assert r.status != "answered"
-    (gate,) = [e for e in agent.session.log.read() if e.kind == "gate"]
-    (reason,) = cast(list[str], gate.decision["reasons"])  # type: ignore[union-attr]
-    assert reason.startswith("can't confirm the conclusion is open")
-    assert "(b1: case 1: still)" in reason
-
-
-def test_no_broken_given_lets_uncertain_stand(tmp_path: Path):
-    agent, backend = formal_agent(
-        [CONVERSE, scenarios_json(), think(), extract_json([], final("Uncertain", ["b1"]))],
-        tmp_path,
-    )
-    r = agent.run(Task(goal="g", givens=SHAPES[:2], conclusion="Tile is a shape."))
-    assert (r.status, r.answer) == ("answered", "Uncertain")
-    assert len([c for c in backend.calls if c.schema_name == "Scenarios"]) == 1
