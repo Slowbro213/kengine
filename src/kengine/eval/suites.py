@@ -72,6 +72,12 @@ def _load_dataset(hf_id: str, hf_config: str | None, split: str) -> Any:
     return load_dataset(hf_id, hf_config, split=split)
 
 
+def load_rows(hf_id: str, hf_config: str | None, split: str) -> list[Mapping[str, object]]:
+    """Every row of a dataset split. Needs the `eval` extra."""
+    ds = _load_dataset(hf_id, hf_config, split)
+    return [cast(Mapping[str, object], ds[i]) for i in range(len(ds))]
+
+
 def load_items(suite: SuiteName, size: Size, seed: int = 0) -> list[EvalItem]:
     """Load a fixed, seeded subset of a suite. Needs the `eval` extra and network access."""
     spec = SUITES[suite]

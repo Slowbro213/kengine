@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import datetime
 import json
+import random
 import subprocess
+from collections import Counter
 from collections.abc import Callable
 from pathlib import Path
 from typing import Annotated, Literal
@@ -19,6 +21,7 @@ from kengine.claims.formal import FormalSyntax
 from kengine.cli.doctor import nvidia_smi, render_report, run_doctor
 from kengine.config import BackendConfig, KengineConfig, default_config_paths, load_config
 from kengine.eval import suites
+from kengine.eval.adapters import gsm8k as gsm8k_adapter
 from kengine.eval.baseline import BaselineSolver
 from kengine.eval.compare import compare_runs
 from kengine.eval.kengine_solver import KengineSolver
@@ -26,6 +29,7 @@ from kengine.eval.probe_formal import run_probe
 from kengine.eval.runner import rescore, results_dir_name, run_eval
 from kengine.eval.taxonomy import summarize_taxonomy
 from kengine.eval.types import RunMetrics, Size, Solver, SuiteName
+from kengine.finetune.data import build_pairs, distill_gsm8k
 from kengine.loop.agent import Agent, Limits
 from kengine.loop.profiles import get_profile
 from kengine.loop.task import JUDGE_FORMAT, Task, judge_question, split_sentences
@@ -226,6 +230,39 @@ def eval_compare(
     out = other / f"compare-{base.name}.json"
     out.write_text(c.model_dump_json(indent=2) + "\n", encoding="utf-8")
     typer.echo(f"wrote {out}")
+
+
+@app.command("finetune-data")
+def finetune_data(
+    out: Annotated[Path, typer.Option()] = Path("finetune/data"),
+    gsm8k: Annotated[
+        int, typer.Option(min=0, help="gsm8k-train items to translate with today's model")
+    ] = 100,
+    seed: Annotated[int, typer.Option()] = 0,
+) -> None:
+    """Write FORMALIZE training pairs: FOLIO-train's expert logic, plus gsm8k-train items
+    answered by the current model."""
+    rows = suites.load_rows("tasksource/folio", None, "train")
+    pairs, dropped = build_pairs(rows)
+    if gsm8k:
+        cfg, _ = _config()
+        math = suites.load_rows("openai/gsm8k", "main", "train")
+        picked = random.Random(seed).sample(range(len(math)), gsm8k)
+        items = [gsm8k_adapter.parse_row(math[i], i) for i in picked]
+        pairs += distill_gsm8k(backend_factory(cfg.backend), cfg.roles.formalize, items)
+    out.mkdir(parents=True, exist_ok=True)
+    for split in ("train", "dev"):
+        lines = [p.model_dump_json() + "\n" for p in pairs if p.split == split]
+        (out / f"{split}.jsonl").write_text("".join(lines), encoding="utf-8")
+    report = {
+        "folio_rows": len(rows),
+        "kept": {s: sum(p.split == s and p.label != "" for p in pairs) for s in ("train", "dev")},
+        "gsm8k": sum(p.label == "" for p in pairs),
+        "labels": dict(Counter(p.label for p in pairs if p.label)),
+        "dropped": dict(dropped.most_common()),
+    }
+    (out / "report.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    typer.echo(json.dumps(report))
 
 
 @app.command("probe-formal")
