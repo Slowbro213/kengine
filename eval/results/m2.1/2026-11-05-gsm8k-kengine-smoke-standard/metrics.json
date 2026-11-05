@@ -1,0 +1,17 @@
+{
+  "suite": "gsm8k",
+  "solver": "kengine",
+  "n": 10,
+  "headline_accuracy": 0.8,
+  "exact_accuracy": 0.8,
+  "abstention_rate": 0.2,
+  "answered_accuracy": 1.0,
+  "status_counts": {
+    "answered": 8,
+    "blocked": 2
+  },
+  "mean_model_calls": 8.6,
+  "mean_prompt_tokens": 13847.3,
+  "mean_completion_tokens": 16089.6,
+  "mean_wall_s": 235.4193064130988
+}

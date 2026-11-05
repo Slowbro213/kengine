@@ -1,0 +1,53 @@
+{
+  "n": 30,
+  "base_correct": 7,
+  "other_correct": 6,
+  "both_right": 2,
+  "broke": 0,
+  "false_alarm": 5,
+  "fixed": 4,
+  "caught": 19,
+  "both_wrong": 0,
+  "ids": {
+    "both_right": [
+      "folio-tasksource-1",
+      "folio-tasksource-289"
+    ],
+    "broke": [],
+    "false_alarm": [
+      "folio-tasksource-1364",
+      "folio-tasksource-291",
+      "folio-tasksource-622",
+      "folio-tasksource-241",
+      "folio-tasksource-549"
+    ],
+    "fixed": [
+      "folio-tasksource-2",
+      "folio-tasksource-726",
+      "folio-tasksource-657",
+      "folio-tasksource-242"
+    ],
+    "caught": [
+      "folio-tasksource-1014",
+      "folio-tasksource-1208",
+      "folio-tasksource-1209",
+      "folio-tasksource-565",
+      "folio-tasksource-1361",
+      "folio-tasksource-1363",
+      "folio-tasksource-1365",
+      "folio-tasksource-532",
+      "folio-tasksource-658",
+      "folio-tasksource-1301",
+      "folio-tasksource-893",
+      "folio-tasksource-894",
+      "folio-tasksource-621",
+      "folio-tasksource-928",
+      "folio-tasksource-904",
+      "folio-tasksource-609",
+      "folio-tasksource-548",
+      "folio-tasksource-1271",
+      "folio-tasksource-1273"
+    ],
+    "both_wrong": []
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "n": 10,
+  "base_correct": 9,
+  "other_correct": 8,
+  "both_right": 8,
+  "broke": 0,
+  "false_alarm": 1,
+  "fixed": 0,
+  "caught": 1,
+  "both_wrong": 0,
+  "ids": {
+    "both_right": [
+      "gsm8k-82",
+      "gsm8k-530",
+      "gsm8k-621",
+      "gsm8k-788",
+      "gsm8k-829",
+      "gsm8k-861",
+      "gsm8k-976",
+      "gsm8k-995"
+    ],
+    "broke": [],
+    "false_alarm": [
+      "gsm8k-733"
+    ],
+    "fixed": [],
+    "caught": [
+      "gsm8k-1047"
+    ],
+    "both_wrong": []
+  }
+}
