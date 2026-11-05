@@ -11,7 +11,7 @@ The logic checker is only as good as the translation behind it.
 - **The checker is reliable.** In M2.1 every answer it let through was right: 10 of 10 on folio and 16 of 16 on gsm8k.
 - **Bad translations break it in both directions.**
   - They block right answers, such as 289's conclusion.
-  - The Uncertain check would wrongly pass bad answers. Letting the checker answer Uncertain itself would be right only 16 times in 27, and every miss traced back to a translation error.
+  - The Uncertain check would wrongly pass bad answers. Letting the checker answer Uncertain itself would be right only 16 times in 27, and every miss traced back to a translation error. Asking the model to spot those translations didn't work either: it flagged all 27.
 - **The model's own reasoning isn't better than the bare model** (13–15 right out of 30, against 16). So a reasoning fine-tune is worth doing too. But it would teach the model to say Uncertain more often, and that's only safe once the translations are good. Reasoning is stage 2, with its own approval.
 
 "Translation" means the FORMALIZE call. It turns the premises and the conclusion into our formal language before the first step.
