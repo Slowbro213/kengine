@@ -112,6 +112,15 @@ class ConclusionFormalizedEvent(_Event):
     formal: Formal | None
 
 
+class ScenariosEvent(_Event):
+    """The givens left the conclusion open; the model read z3's two cases against them.
+    `broken` maps each given a case makes false, as written, to why."""
+
+    kind: Literal["scenarios"] = "scenarios"
+    cases: list[list[tuple[str, str]]]
+    broken: dict[str, str]
+
+
 class RunFinishedEvent(_Event):
     kind: Literal["run_finished"] = "run_finished"
     result: dict[str, object]
@@ -131,6 +140,7 @@ Event = Annotated[
     | FormalizeEvent
     | GivenReformalizedEvent
     | ConclusionFormalizedEvent
+    | ScenariosEvent
     | RunFinishedEvent,
     Field(discriminator="kind"),
 ]

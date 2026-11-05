@@ -260,6 +260,19 @@ def test_uncertain_must_be_left_open_by_the_givens():
     assert why == "can't confirm the conclusion is open: b3 has no formal form"
 
 
+def test_uncertain_doesnt_stand_when_a_given_may_say_more():
+    s = store()
+    b1, _ = dogs(s)
+    cat = Formal(statements=("cat(rex)",))
+    why = check_answer("Uncertain", cat, [b1], s, {"b2": "case 1: Rex is a dog but not a mammal"})
+    assert why == (
+        "can't confirm the conclusion is open: its formal check allows a case that makes b2 "
+        "false as written (b2: case 1: Rex is a dog but not a mammal). Read what b2 says: the "
+        "conclusion may follow from it, or be ruled out"
+    )
+    assert check_answer("True", MAMMAL, [b1, "b2"], s, {"b2": "x"}) is None  # only Uncertain
+
+
 def test_a_verified_step_on_an_unchecked_claim_isnt_trusted():
     s = store()
     b1, _ = dogs(s)

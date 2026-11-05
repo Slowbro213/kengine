@@ -18,6 +18,16 @@ def test_missing_premise_is_open_with_counterexample():
     assert ("mammal(rex)", "false") in d.world
 
 
+def test_open_gives_both_cases_in_full():
+    d = decide(st("dog(x) -> mammal(x)", "mammal(tom)", "age(tom) > 3"), st("dog(tom)"))
+    assert d.kind == "open"
+    without, with_ = (dict(c) for c in d.cases)
+    assert without.keys() == with_.keys() == {"age(tom)", "dog(tom)", "mammal(tom)"}
+    assert (without["dog(tom)"], with_["dog(tom)"]) == ("false", "true")
+    assert without["mammal(tom)"] == with_["mammal(tom)"] == "true"
+    assert float(without["age(tom)"]) > 3
+
+
 def test_converse_error_is_open():
     d = decide(st("dog(x) -> mammal(x)", "mammal(tom)"), st("dog(tom)"))
     assert d.kind == "open"

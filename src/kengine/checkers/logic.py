@@ -21,7 +21,7 @@ mistranslation can be found.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 from kengine.beliefs.records import BeliefRecord
 from kengine.beliefs.status import TERMINAL, Status
@@ -238,11 +238,17 @@ def answer_label(answer: str) -> str | None:
 
 
 def check_answer(
-    answer: str, conclusion: Formal, rests_on: Sequence[str], view: BeliefView
+    answer: str,
+    conclusion: Formal,
+    rests_on: Sequence[str],
+    view: BeliefView,
+    doubtful: Mapping[str, str] | None = None,
 ) -> str | None:
     """Why a True/False/Uncertain answer about `conclusion` doesn't stand, or None if it does.
 
-    `rests_on` is everything the answer rests on, its citations and their premises."""
+    `rests_on` is everything the answer rests on, its citations and their premises.
+    `doubtful` maps givens whose formal form may say less than the sentence to why. Then an
+    open conclusion may only look open, so Uncertain doesn't stand."""
     label = answer_label(answer)
     if label is None:
         return f"answer with exactly one of: {', '.join(ANSWER_LABELS)}"
@@ -270,6 +276,15 @@ def check_answer(
             return (
                 f"can't confirm the conclusion is open: {_ids(informal)} {_has(informal)} no "
                 "formal form"
+            )
+        if doubtful:
+            ids = list(doubtful)
+            whys = "; ".join(f"{id}: {why}" for id, why in doubtful.items())
+            say, them = ("says", "it") if len(ids) == 1 else ("say", "them")
+            return (
+                f"can't confirm the conclusion is open: its formal check allows a case that "
+                f"makes {_ids(ids)} false as written ({whys}). Read what {_ids(ids)} {say}: "
+                f"the conclusion may follow from {them}, or be ruled out"
             )
         return None
 

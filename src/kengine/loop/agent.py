@@ -22,6 +22,7 @@ from kengine.audit.events import (
     GivenReformalizedEvent,
     ModelCallEvent,
     RunFinishedEvent,
+    ScenariosEvent,
     SessionStartedEvent,
     StatusChangedEvent,
     ThinkEvent,
@@ -37,6 +38,7 @@ from kengine.backend.types import (
     RoleConfig,
     StructuredOutputError,
 )
+from kengine.beliefs.records import BeliefRecord
 from kengine.beliefs.status import TERMINAL
 from kengine.beliefs.store import BeliefStore, StatusChange
 from kengine.checkers.base import Checker, Outcome, Verdict
@@ -49,10 +51,11 @@ from kengine.claims.formalize import (
     reformalize_messages,
     says_everything,
 )
+from kengine.claims.scenarios import Scenarios, read_scenarios, scenario_messages
 from kengine.claims.schema import Claim, ClaimType, Formal, Source, SourceKind
 from kengine.claims.voting import VoteResult, default_k, vote
 from kengine.config import RolesConfig
-from kengine.logic.entail import consistent
+from kengine.logic.entail import consistent, decide
 from kengine.loop.context import (
     ContextOverflowError,
     StepSummary,
@@ -176,6 +179,7 @@ class Agent:
         self._goal = ""
         self._reformalized: set[str] = set()  # givens translated again; each gets one retry
         self._conclusion: Formal | None = None  # the task's conclusion, for the answer check
+        self._doubtful: dict[str, str] = {}  # givens a case the forms allow makes false -> why
 
     @property
     def store(self) -> BeliefStore:
@@ -254,6 +258,76 @@ class Agent:
             self._log(
                 GivenReformalizedEvent(step=0, belief_id=ids[i], old=old, new=formal[i], reason=why)
             )
+        if self._conclusion is not None and self.formalize_givens:
+            self._check_scenarios()
+
+    def _check_scenarios(self) -> None:
+        """When the givens' formal forms leave the conclusion open, ask whether either case z3
+        finds makes a given false as written. Each such given is translated again, once. Any
+        still in doubt keeps an Uncertain answer from passing."""
+        givens = self._task_givens()
+        broken = self._scenarios(givens)
+        if not broken:
+            return
+        current = {n: r.claim.formal for n, r in enumerate(givens, 1) if r.claim.formal}
+        redo = {i: f"it allows a case that makes it false ({why})" for i, why in broken.items()}
+        messages = reformalize_messages(
+            self._goal, [r.claim.text for r in givens], current, redo, self.formal_syntax
+        )
+        again = self._formalize(messages, len(givens), 0)
+        for i in broken:
+            new = again.get(i)
+            if new is None or says_everything(new) is not None or not _accepts(current, i, new):
+                continue
+            id = givens[i - 1].claim.id
+            self.store.set_formal(id, new)
+            self._reformalized.add(id)
+            self._log(
+                GivenReformalizedEvent(
+                    step=0, belief_id=id, old=current[i], new=new, reason=redo[i]
+                )
+            )
+            current[i] = new
+        givens = self._task_givens()
+        self._doubtful = {givens[i - 1].claim.id: why for i, why in self._scenarios(givens).items()}
+
+    def _scenarios(self, givens: Sequence[BeliefRecord]) -> dict[int, str]:
+        """Given number -> why, for the givens a case z3 finds makes false as written. Empty
+        unless every given has a formal form and they leave the conclusion open."""
+        assert self._conclusion is not None
+        formals = [r.claim.formal for r in givens]
+        if not givens or None in formals:
+            return {}
+        d = decide(_statements(f for f in formals if f), _statements([self._conclusion]))
+        if d.kind != "open":
+            return {}
+        messages = scenario_messages([r.claim.text for r in givens], d.cases)
+        t0 = self.clock()
+        try:
+            parsed, completion = self.backend.complete_structured(
+                messages, self.roles.critic, Scenarios
+            )
+        except BackendError as e:  # it can only cast doubt, so a failed call casts none
+            if isinstance(e, StructuredOutputError) and e.completion is not None:
+                self._record_call(messages, e.completion, "scenarios", 0, t0)
+            return {}
+        self._record_call(messages, completion, "scenarios", 0, t0)
+        broken = read_scenarios(parsed, len(givens), len(d.cases))
+        self._log(
+            ScenariosEvent(
+                step=0,
+                cases=[list(c) for c in d.cases],
+                broken={givens[i - 1].claim.id: why for i, why in broken.items()},
+            )
+        )
+        return broken
+
+    def _task_givens(self) -> list[BeliefRecord]:
+        return [
+            r
+            for r in self.store.all()
+            if r.claim.type == ClaimType.GIVEN and r.claim.source.kind == SourceKind.TASK
+        ]
 
     def _formalize(self, messages: list[Message], n: int, step: int) -> dict[int, Formal]:
         """One FORMALIZE call over `n` statements. Any failure leaves the givens informal; it
@@ -285,11 +359,7 @@ class Agent:
         """Translate `given` again, without showing the step that failed against it. Returns
         whether the new form was taken."""
         self._reformalized.add(given)
-        givens = [
-            r
-            for r in self.store.all()
-            if r.claim.type == ClaimType.GIVEN and r.claim.source.kind == SourceKind.TASK
-        ]
+        givens = self._task_givens()
         i = [r.claim.id for r in givens].index(given) + 1
         current = {n: r.claim.formal for n, r in enumerate(givens, 1) if r.claim.formal}
         messages = reformalize_messages(
@@ -507,7 +577,12 @@ class Agent:
             self._last_blocked = False
             return
         decision = evaluate_gate(
-            preconditions, self.store, self.profile.final_gate, answer, self._conclusion
+            preconditions,
+            self.store,
+            self.profile.final_gate,
+            answer,
+            self._conclusion,
+            self._doubtful,
         )
         self._log(GateEvent(step=step.n, decision=decision.model_dump(mode="json")))
         if decision.allowed:
