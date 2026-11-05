@@ -208,6 +208,27 @@ def test_true_must_follow_from_what_the_answer_rests_on():
     why = check_answer("True", MAMMAL, [b1], s)
     assert why is not None and why.startswith("what it rests on (b1) doesn't show the conclusion")
     assert "mammal(rex) is false" in why
+    assert why.endswith("Adding b2 shows it: rest the answer on it too")
+
+
+def test_an_answer_the_givens_dont_settle_isnt_told_what_to_add():
+    s = store()
+    b1, _ = dogs(s)
+    why = check_answer("True", Formal(statements=("cat(rex)",)), [b1], s)
+    assert why is not None
+    assert why.endswith("Rest the answer on a claim that states the conclusion")
+
+
+def test_false_is_told_what_else_rules_the_conclusion_out():
+    s = store()
+    b1 = given(s, "Rex is a dog", "dog(rex)")
+    b2 = given(s, "No dog is a cat", "dog(x) -> not cat(x)")
+    why = check_answer("False", Formal(statements=("cat(rex)",)), [b1], s)
+    assert why == (
+        "what it rests on (b1) doesn't rule the conclusion out. Adding b2 rules it out: rest the "
+        "answer on it too"
+    )
+    assert check_answer("False", Formal(statements=("cat(rex)",)), [b1, b2], s) is None
 
 
 def test_a_valid_chain_to_somewhere_else_doesnt_answer_the_question():
@@ -237,6 +258,18 @@ def test_uncertain_must_be_left_open_by_the_givens():
     given(s, "Rex is not a cat, or he's a lion")
     why = check_answer("Uncertain", Formal(statements=("cat(rex)",)), [b1], s)
     assert why == "can't confirm the conclusion is open: b3 has no formal form"
+
+
+def test_a_verified_step_on_an_unchecked_claim_isnt_trusted():
+    s = store()
+    b1, _ = dogs(s)
+    b3 = add(s, ClaimType.FACT, [b1], "cat(rex)").id  # unchecked
+    b4 = add(s, ClaimType.INFERENCE, [b3], "cat(rex)")
+    s.apply_verdict(b4.id, check(s, b4), step=1)
+    assert s.get(b4.id).status == Status.VERIFIED
+    assert check_answer("Uncertain", Formal(statements=("cat(rex)",)), [b1], s) is None
+    v = check(s, add(s, ClaimType.FACT, [], "cat(rex)"))
+    assert v.outcome != Outcome.PASS
 
 
 def test_an_answer_that_isnt_a_label_is_refused():

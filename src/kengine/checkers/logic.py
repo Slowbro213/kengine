@@ -1,10 +1,10 @@
 """The logic checker (spec §5.5 #3): does a formal claim follow from what it rests on?
 
 An inference is checked against the premises it cites, so a step that silently needs
-another premise fails with a counterexample. A fact is checked against everything trusted
-(the givens and verified claims). An `undetermined` claim ("the premises settle X neither
-way") is verified only if X is open, and every given has a formal form; otherwise a given
-we couldn't translate might settle it.
+another premise fails with a counterexample. A fact is checked against everything trusted:
+the givens, and verified claims that rest only on trusted ones. An `undetermined` claim ("the
+premises settle X neither way") is verified only if X is open, and every given has a formal
+form; otherwise a given we couldn't translate might settle it.
 
 A step that names a new number (`total = 25`) that nothing it cites defines is left to
 arithmetic: the sum lives in the model's working, and the logic checker would only find
@@ -70,13 +70,20 @@ def _holds(rec: BeliefRecord) -> bool:
 
 
 def _trusted(view: BeliefView, exclude: str) -> list[BeliefRecord]:
+    """The givens and verified claims whose premises are all trusted too: a step verified
+    from an unchecked claim only shows it follows, not that it holds."""
+    sound = {
+        r.claim.id
+        for r in view.all()
+        if r.status not in TERMINAL
+        and (r.claim.type == ClaimType.GIVEN or r.status == Status.VERIFIED)
+    }
     return [
         r
         for r in view.all()
         if r.claim.id != exclude
-        and r.status not in TERMINAL
         and _holds(r)
-        and (r.claim.type == ClaimType.GIVEN or r.status == Status.VERIFIED)
+        and all(id in sound for id in view.premise_closure([r.claim.id]))
     ]
 
 
@@ -245,13 +252,7 @@ def check_answer(
     else:
         records = [view.get(id) for id in rests_on]
         base = [r for r in records if r.status not in TERMINAL and _holds(r)]
-    premises: list[Statement] = []
-    owners: list[str] = []
-    for rec in base:
-        assert rec.claim.formal is not None
-        for s in _statements(rec.claim.formal):
-            premises.append(s)
-            owners.append(rec.claim.id)
+    premises, owners = _premises(base)
     d = decide(premises, goal)
     core = _ids([owners[i] for i in d.core])
     if d.kind == "inconsistent":
@@ -282,12 +283,41 @@ def check_answer(
     cited = _ids([r.claim.id for r in base]) if base else "nothing formal"
     informal = [id for id in rests_on if not _holds(view.get(id))]
     note = f" ({_ids(informal)} {_has(informal)} no formal form)" if informal else ""
+    missing = _also_needed(goal, rests_on, view, want)
+    them = "it" if len(missing) == 1 else "them"
     if label == "True":
-        return (
+        why = (
             f"what it rests on ({cited}) doesn't show the conclusion: it allows "
-            f"{render_world(d.world)}{note}. Rest the answer on a claim that states the conclusion"
+            f"{render_world(d.world)}{note}."
         )
-    return (
-        f"what it rests on ({cited}) doesn't rule the conclusion out{note}. Rest the answer on a "
-        "claim that states the conclusion's negation"
-    )
+        if missing:
+            return f"{why} Adding {_ids(missing)} shows it: rest the answer on {them} too"
+        return f"{why} Rest the answer on a claim that states the conclusion"
+    why = f"what it rests on ({cited}) doesn't rule the conclusion out{note}."
+    if missing:
+        return f"{why} Adding {_ids(missing)} rules it out: rest the answer on {them} too"
+    return f"{why} Rest the answer on a claim that states the conclusion's negation"
+
+
+def _premises(records: Sequence[BeliefRecord]) -> tuple[list[Statement], list[str]]:
+    """The statements of `records`' formal forms, and the id of the claim each came from."""
+    premises: list[Statement] = []
+    owners: list[str] = []
+    for rec in records:
+        assert rec.claim.formal is not None
+        for s in _statements(rec.claim.formal):
+            premises.append(s)
+            owners.append(rec.claim.id)
+    return premises, owners
+
+
+def _also_needed(
+    goal: Sequence[Statement], rests_on: Sequence[str], view: BeliefView, want: str
+) -> list[str]:
+    """The givens and verified claims, outside `rests_on`, that would let it decide `goal` as
+    `want` says. Empty when even all of them don't."""
+    premises, owners = _premises(_trusted(view, exclude=""))
+    d = decide(premises, goal)
+    if d.kind != want:
+        return []
+    return [id for id in dict.fromkeys(owners[i] for i in d.core) if id not in rests_on]
