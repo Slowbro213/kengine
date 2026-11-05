@@ -11,6 +11,8 @@ from kengine.cli import main
 from kengine.config import BackendConfig
 from kengine.eval import suites
 from kengine.eval.types import EvalItem, Size, SuiteName
+from kengine.loop.agent import RunResult
+from kengine.loop.task import JUDGE_FORMAT, Task, judge_question
 
 runner = CliRunner()
 
@@ -211,3 +213,28 @@ def test_cli_eval_compare(tmp_path: Path) -> None:
     assert r.exit_code == 0, r.output
     assert "fixed=1" in r.output and "errors_caught=1.000" in r.output
     assert (tmp_path / "other" / "compare-base.json").exists()
+
+
+def test_cli_run_with_a_conclusion_judges_it(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    use_data_dir(tmp_path)
+    tasks: list[Task] = []
+    run = main.Agent.run
+
+    def record(self: main.Agent, task: Task) -> RunResult:
+        tasks.append(task)
+        return run(self, task)
+
+    monkeypatch.setattr(main.Agent, "run", record)
+    use_backend(monkeypatch, ScriptedBackend([FORMALIZE_NONE, think_reply()] * 2))
+    args = ["run", "All cats purr. Tom is a cat.", "--conclusion", "Tom purrs.", "--max-steps", "1"]
+    runner.invoke(main.app, args)
+    assert tasks == [
+        Task(
+            goal=judge_question(["All cats purr.", "Tom is a cat."], "Tom purrs."),
+            answer_format=JUDGE_FORMAT,
+            givens=["All cats purr.", "Tom is a cat."],
+            conclusion="Tom purrs.",
+        )
+    ]

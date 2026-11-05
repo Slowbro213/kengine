@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 
 from pydantic import BaseModel, ConfigDict, Field
 
 _SENTENCE_END_RE = re.compile(r"(?<=[.?!])\s+|\n+")
+
+JUDGE_FORMAT = "Answer with exactly one of: True, False, Uncertain."
 
 
 class Task(BaseModel):
@@ -27,3 +30,12 @@ def split_sentences(text: str) -> list[str]:
     """Sentences and lines of `text`, stripped. Questions are kept: their numbers are task
     data too ("How much do 12 pens cost?")."""
     return [s.strip() for s in _SENTENCE_END_RE.split(text) if s.strip()]
+
+
+def judge_question(premises: Sequence[str], conclusion: str) -> str:
+    """Asks whether `conclusion` is True, False or Uncertain given only `premises`."""
+    return (
+        "Premises:\n" + "\n".join(premises) + "\n\n"
+        f"Conclusion: {conclusion}\n\n"
+        "Based only on the premises, is the conclusion True, False, or Uncertain?"
+    )

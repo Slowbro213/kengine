@@ -4,8 +4,9 @@ from collections.abc import Mapping, Sequence
 from typing import cast
 
 from kengine.eval.types import EvalItem
+from kengine.loop.task import JUDGE_FORMAT, judge_question
 
-ANSWER_FORMAT = "Answer with exactly one of: True, False, Uncertain."
+ANSWER_FORMAT = JUDGE_FORMAT
 
 
 def parse_row(row: Mapping[str, object], index: int) -> EvalItem:
@@ -15,13 +16,8 @@ def parse_row(row: Mapping[str, object], index: int) -> EvalItem:
     else:
         lines = [str(p).strip() for p in cast(Sequence[object], premises)]
     lines = [p for p in lines if p]
-    premises_text = "\n".join(lines)
     conclusion = str(row["conclusion"]).strip()
-    question = (
-        f"Premises:\n{premises_text}\n\n"
-        f"Conclusion: {conclusion}\n\n"
-        "Based only on the premises, is the conclusion True, False, or Uncertain?"
-    )
+    question = judge_question(lines, conclusion)
     example_id = row.get("example_id", index)
     return EvalItem(
         id=f"folio-{example_id}",

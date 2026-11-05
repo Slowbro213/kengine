@@ -28,7 +28,7 @@ from kengine.eval.taxonomy import summarize_taxonomy
 from kengine.eval.types import RunMetrics, Size, Solver, SuiteName
 from kengine.loop.agent import Agent, Limits
 from kengine.loop.profiles import get_profile
-from kengine.loop.task import Task, split_sentences
+from kengine.loop.task import JUDGE_FORMAT, Task, judge_question, split_sentences
 
 app = typer.Typer(no_args_is_help=True, help="kengine: check a small model's reasoning.")
 
@@ -161,6 +161,13 @@ def run(
         int | None, typer.Option(min=1, help="Completion-token budget for the whole run.")
     ] = None,
     max_wall_s: Annotated[float | None, typer.Option(min=0)] = None,
+    conclusion: Annotated[
+        str | None,
+        typer.Option(
+            help="Judge this statement True, False or Uncertain from TASK's sentences, "
+            "and check the answer against it."
+        ),
+    ] = None,
 ) -> None:
     """Solve TASK with the agent loop. Exits 0 when answered, 3 otherwise."""
     cfg, _ = _config()
@@ -181,7 +188,18 @@ def run(
             formal_syntax=cfg.logic.syntax,
             formalize_givens=cfg.logic.formalize_givens,
         )
-        r = agent.run(Task(goal=task, givens=split_sentences(task)))
+        givens = split_sentences(task)
+        if conclusion is None:
+            r = agent.run(Task(goal=task, givens=givens))
+        else:
+            r = agent.run(
+                Task(
+                    goal=judge_question(givens, conclusion),
+                    answer_format=JUDGE_FORMAT,
+                    givens=givens,
+                    conclusion=conclusion,
+                )
+            )
         typer.echo(f"status: {r.status}")
         if r.answer is not None:
             typer.echo(f"answer: {r.answer}")
