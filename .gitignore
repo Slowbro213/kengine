@@ -7,6 +7,8 @@ __pycache__/
 eval/results/**/sessions/
 kengine.toml
 .worktrees/
-finetune/data/
 finetune/.venv/
 finetune/out/
+finetune/base/
+finetune/out.log
+finetune/adapter.tgz

@@ -1,0 +1,29 @@
+{
+  "folio_rows": 1001,
+  "kept": {
+    "train": 350,
+    "dev": 43
+  },
+  "gsm8k": 100,
+  "labels": {
+    "True": 123,
+    "Uncertain": 172,
+    "False": 98
+  },
+  "dropped": {
+    "uses equality": 148,
+    "z3 says Uncertain": 132,
+    "\"some\" in a conclusion": 87,
+    "says everything": 69,
+    "\"some\" with an \"if\" part": 53,
+    "\"some\" inside \"every\"": 43,
+    "malformed": 36,
+    "says nothing": 14,
+    "z3 says True": 9,
+    "z3 says False": 5,
+    "z3 says unknown": 4,
+    "z3 says inconsistent": 3,
+    "needs too many statements": 3,
+    "too large": 2
+  }
+}
