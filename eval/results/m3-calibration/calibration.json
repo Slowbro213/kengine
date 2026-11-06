@@ -1,0 +1,360 @@
+{
+ "counts": {
+  "facts:pass:verified": 23,
+  "inference-nli:pass:supported": 5,
+  "inference-nli:unknown:None": 7,
+  "facts:pass:supported": 1,
+  "facts:unknown:None": 2
+ },
+ "rows": [
+  {
+   "session": "20261103-113650-868ffe",
+   "claim": "The Column of Saint Zanobi is located just north of the Baptistery of San Giovanni",
+   "verdict": "facts:pass:verified",
+   "why": "the documents state it: doc 5: Colonna di San Zanobi, Florence: The Column of Saint Zanobi (it:Colonna di San Zanobi) is a monumental marble column, surmounted by a cross above a crown of fire, located just north of the Bapstistery",
+   "evidence": [
+    "doc 5: Colonna di San Zanobi, Florence: The Column of Saint Zanobi (it:Colonna di San Zanobi) is a monumental marble column, surmounted by a cross above a crown of fire, located just north of the Bapstistery"
+   ]
+  },
+  {
+   "session": "20261103-113650-868ffe",
+   "claim": "This Baptistery has the status of a minor basilica",
+   "verdict": "facts:pass:verified",
+   "why": "the documents state it: doc 8: Florence Baptistery: The Florence Baptistery (Italian: \"Battistero di San Giovanni\" ), also known as the Baptistery of Saint John, is a religious building in Florence, Italy, and has the status of a m",
+   "evidence": [
+    "doc 8: Florence Baptistery: The Florence Baptistery (Italian: \"Battistero di San Giovanni\" ), also known as the Baptistery of Saint John, is a religious building in Florence, Italy, and has the status of a m"
+   ]
+  },
+  {
+   "session": "20261103-113650-868ffe",
+   "claim": "Thus, the religious building's status is a minor basilica",
+   "verdict": "inference-nli:pass:supported",
+   "why": "the entailment model finds it follows from b1, b2 (97%)",
+   "evidence": [
+    "b1",
+    "b2"
+   ]
+  },
+  {
+   "session": "20261103-113650-868ffe",
+   "claim": "The Column of Saint Zanobi is located just north of the Baptistery of San Giovanni",
+   "verdict": "facts:pass:verified",
+   "why": "the documents state it: doc 5: Colonna di San Zanobi, Florence: The Column of Saint Zanobi (it:Colonna di San Zanobi) is a monumental marble column, surmounted by a cross above a crown of fire, located just north of the Bapstistery",
+   "evidence": [
+    "doc 5: Colonna di San Zanobi, Florence: The Column of Saint Zanobi (it:Colonna di San Zanobi) is a monumental marble column, surmounted by a cross above a crown of fire, located just north of the Bapstistery"
+   ]
+  },
+  {
+   "session": "20261103-113650-868ffe",
+   "claim": "This specific religious building holds the status of a minor basilica",
+   "verdict": "facts:pass:verified",
+   "why": "the documents state it: doc 8: Florence Baptistery: The Florence Baptistery (Italian: \"Battistero di San Giovanni\" ), also known as the Baptistery of Saint John, is a religious building in Florence, Italy, and has the status of a m",
+   "evidence": [
+    "doc 8: Florence Baptistery: The Florence Baptistery (Italian: \"Battistero di San Giovanni\" ), also known as the Baptistery of Saint John, is a religious building in Florence, Italy, and has the status of a m"
+   ]
+  },
+  {
+   "session": "20261103-113650-868ffe",
+   "claim": "Thus, the label defining the building's status is 'a minor basilica'",
+   "verdict": "inference-nli:pass:supported",
+   "why": "the entailment model finds it follows from b4, b5 (98%)",
+   "evidence": [
+    "b4",
+    "b5"
+   ]
+  },
+  {
+   "session": "20261103-114559-9ce8ef",
+   "claim": "The Drentse Patrijshond originates from the Dutch province of Drenthe",
+   "verdict": "facts:pass:verified",
+   "why": "the documents state it: doc 4: Drentse Patrijshond: The Drentsche Patrijshond is a versatile spaniel-type hunting dog from the Dutch province of Drenthe. Called the Dutch Partridge Dog (or \"Drent\" for Drenthe) in English, approxima",
+   "evidence": [
+    "doc 4: Drentse Patrijshond: The Drentsche Patrijshond is a versatile spaniel-type hunting dog from the Dutch province of Drenthe. Called the Dutch Partridge Dog (or \"Drent\" for Drenthe) in English, approxima"
+   ]
+  },
+  {
+   "session": "20261103-114559-9ce8ef",
+   "claim": "The Appenzeller Sennenhund hails from the Swiss Alps region",
+   "verdict": "facts:pass:verified",
+   "why": "the documents state it: doc 8: Appenzeller Sennenhund: The Appenzeller Sennenhund is a medium-size breed of dog, one of the four regional breeds of Sennenhund-type dogs from the Swiss Alps. The name Sennenhund refers to people call",
+   "evidence": [
+    "doc 8: Appenzeller Sennenhund: The Appenzeller Sennenhund is a medium-size breed of dog, one of the four regional breeds of Sennenhund-type dogs from the Swiss Alps. The name Sennenhund refers to people call"
+   ]
+  },
+  {
+   "session": "20261103-114559-9ce8ef",
+   "claim": "Therefore, the Appenzeller is the dog based in Switzerland",
+   "verdict": "inference-nli:unknown:None",
+   "why": "the entailment model doesn't find that it follows from b1, b2. State the missing link as a fact from the documents and cite it too",
+   "evidence": [
+    "b1",
+    "b2"
+   ]
+  },
+  {
+   "session": "20261103-114559-9ce8ef",
+   "claim": "The Drentse Patrijshond originates from the Dutch province of Drenthe",
+   "verdict": "facts:pass:verified",
+   "why": "the documents state it: doc 4: Drentse Patrijshond: The Drentsche Patrijshond is a versatile spaniel-type hunting dog from the Dutch province of Drenthe. Called the Dutch Partridge Dog (or \"Drent\" for Drenthe) in English, approxima",
+   "evidence": [
+    "doc 4: Drentse Patrijshond: The Drentsche Patrijshond is a versatile spaniel-type hunting dog from the Dutch province of Drenthe. Called the Dutch Partridge Dog (or \"Drent\" for Drenthe) in English, approxima"
+   ]
+  },
+  {
+   "session": "20261103-114559-9ce8ef",
+   "claim": "The Appenzeller Sennenhund hails from the Swiss Alps region",
+   "verdict": "facts:pass:verified",
+   "why": "the documents state it: doc 8: Appenzeller Sennenhund: The Appenzeller Sennenhund is a medium-size breed of dog, one of the four regional breeds of Sennenhund-type dogs from the Swiss Alps. The name Sennenhund refers to people call",
+   "evidence": [
+    "doc 8: Appenzeller Sennenhund: The Appenzeller Sennenhund is a medium-size breed of dog, one of the four regional breeds of Sennenhund-type dogs from the Swiss Alps. The name Sennenhund refers to people call"
+   ]
+  },
+  {
+   "session": "20261103-114559-9ce8ef",
+   "claim": "Therefore, the Appenzeller is the dog based in Switzerland",
+   "verdict": "inference-nli:unknown:None",
+   "why": "the entailment model doesn't find that it follows from b4, b2. State the missing link as a fact from the documents and cite it too",
+   "evidence": [
+    "b4",
+    "b2"
+   ]
+  },
+  {
+   "session": "20261103-114559-9ce8ef",
+   "claim": "The Drentse Patrijshond originates from the Dutch province of Drenthe",
+   "verdict": "facts:pass:verified",
+   "why": "the documents state it: doc 4: Drentse Patrijshond: The Drentsche Patrijshond is a versatile spaniel-type hunting dog from the Dutch province of Drenthe. Called the Dutch Partridge Dog (or \"Drent\" for Drenthe) in English, approxima",
+   "evidence": [
+    "doc 4: Drentse Patrijshond: The Drentsche Patrijshond is a versatile spaniel-type hunting dog from the Dutch province of Drenthe. Called the Dutch Partridge Dog (or \"Drent\" for Drenthe) in English, approxima"
+   ]
+  },
+  {
+   "session": "20261103-114559-9ce8ef",
+   "claim": "The Appenzeller Sennenhund hails from the Swiss Alps region",
+   "verdict": "facts:pass:verified",
+   "why": "the documents state it: doc 8: Appenzeller Sennenhund: The Appenzeller Sennenhund is a medium-size breed of dog, one of the four regional breeds of Sennenhund-type dogs from the Swiss Alps. The name Sennenhund refers to people call",
+   "evidence": [
+    "doc 8: Appenzeller Sennenhund: The Appenzeller Sennenhund is a medium-size breed of dog, one of the four regional breeds of Sennenhund-type dogs from the Swiss Alps. The name Sennenhund refers to people call"
+   ]
+  },
+  {
+   "session": "20261103-114559-9ce8ef",
+   "claim": "Thus, the Appenzeller is the dog based in Switzerland given its specific alpine regional origin",
+   "verdict": "inference-nli:pass:supported",
+   "why": "the entailment model finds it follows from b7, b8 (97%)",
+   "evidence": [
+    "b7",
+    "b8"
+   ]
+  },
+  {
+   "session": "20261103-114559-9ce8ef",
+   "claim": "The Drentse Patrijshond originates from the Dutch province of Drenthe",
+   "verdict": "facts:pass:verified",
+   "why": "the documents state it: doc 4: Drentse Patrijshond: The Drentsche Patrijshond is a versatile spaniel-type hunting dog from the Dutch province of Drenthe. Called the Dutch Partridge Dog (or \"Drent\" for Drenthe) in English, approxima",
+   "evidence": [
+    "doc 4: Drentse Patrijshond: The Drentsche Patrijshond is a versatile spaniel-type hunting dog from the Dutch province of Drenthe. Called the Dutch Partridge Dog (or \"Drent\" for Drenthe) in English, approxima"
+   ]
+  },
+  {
+   "session": "20261103-114559-9ce8ef",
+   "claim": "The Appenzeller Sennenhund hails from the Swiss Alps region",
+   "verdict": "facts:pass:verified",
+   "why": "the documents state it: doc 8: Appenzeller Sennenhund: The Appenzeller Sennenhund is a medium-size breed of dog, one of the four regional breeds of Sennenhund-type dogs from the Swiss Alps. The name Sennenhund refers to people call",
+   "evidence": [
+    "doc 8: Appenzeller Sennenhund: The Appenzeller Sennenhund is a medium-size breed of dog, one of the four regional breeds of Sennenhund-type dogs from the Swiss Alps. The name Sennenhund refers to people call"
+   ]
+  },
+  {
+   "session": "20261103-114559-9ce8ef",
+   "claim": "Therefore, the Appenzeller is the dog based in Switzerland",
+   "verdict": "inference-nli:unknown:None",
+   "why": "the entailment model doesn't find that it follows from b10, b11. State the missing link as a fact from the documents and cite it too",
+   "evidence": [
+    "b10",
+    "b11"
+   ]
+  },
+  {
+   "session": "20261103-115600-d7c791",
+   "claim": "The Medell\u00edn Cartel operated throughout the 1970s and 1980s in the specified regions of Bolivia, Colombia, Central America, Peru, the United States, Canada, and Europe",
+   "verdict": "facts:pass:supported",
+   "why": "the documents partly back it (60% entailment): doc 2: Medell\u00edn Cartel: The Medell\u00edn Cartel was a ruthless, highly organized and much-feared Colombian drug cartel originating in the city of Medell\u00edn, Colombia. The drug cartel operated throughout the 1970s",
+   "evidence": [
+    "doc 2: Medell\u00edn Cartel: The Medell\u00edn Cartel was a ruthless, highly organized and much-feared Colombian drug cartel originating in the city of Medell\u00edn, Colombia. The drug cartel operated throughout the 1970s"
+   ]
+  },
+  {
+   "session": "20261103-115600-d7c791",
+   "claim": "Jos\u00e9 Gonzalo Rodr\u00edguez Gacha, a key leader, lived from 1947 to 1989, confirming his leadership spanned this period",
+   "verdict": "facts:unknown:None",
+   "why": "no document passage states this. Restate closely the sentence that says it and name its document, or drop the claim if no document says it",
+   "evidence": []
+  },
+  {
+   "session": "20261103-115600-d7c791",
+   "claim": "By integrating the decade range with the leader's lifespan, the operation years are confirmed as the 1970s and 1980s",
+   "verdict": "inference-nli:pass:supported",
+   "why": "the entailment model finds it follows from b1, b2 (99%)",
+   "evidence": [
+    "b1",
+    "b2"
+   ]
+  },
+  {
+   "session": "20261103-115600-d7c791",
+   "claim": "The Medell\u00edn Cartel operated throughout the 1970s and 1980s in the specified regions",
+   "verdict": "facts:pass:verified",
+   "why": "the documents state it: doc 2: Medell\u00edn Cartel: The Medell\u00edn Cartel was a ruthless, highly organized and much-feared Colombian drug cartel originating in the city of Medell\u00edn, Colombia. The drug cartel operated throughout the 1970s",
+   "evidence": [
+    "doc 2: Medell\u00edn Cartel: The Medell\u00edn Cartel was a ruthless, highly organized and much-feared Colombian drug cartel originating in the city of Medell\u00edn, Colombia. The drug cartel operated throughout the 1970s"
+   ]
+  },
+  {
+   "session": "20261103-115600-d7c791",
+   "claim": "Gacha lived from 1947 to 1989, covering this period",
+   "verdict": "facts:pass:verified",
+   "why": "the documents state it: doc 4: Jos\u00e9 Gonzalo Rodr\u00edguez Gacha: Jos\u00e9 Gonzalo Rodr\u00edguez Gacha (May 14, 1947 \u2013 December 15, 1989), also known by the nickname \"El Mexicano\", was a Colombian drug lord who was one of the leaders of the not",
+   "evidence": [
+    "doc 4: Jos\u00e9 Gonzalo Rodr\u00edguez Gacha: Jos\u00e9 Gonzalo Rodr\u00edguez Gacha (May 14, 1947 \u2013 December 15, 1989), also known by the nickname \"El Mexicano\", was a Colombian drug lord who was one of the leaders of the not"
+   ]
+  },
+  {
+   "session": "20261103-120636-fd5795",
+   "claim": "The Oneida Community evolved into the giant silverware firm Oneida Limited",
+   "verdict": "facts:pass:verified",
+   "why": "the documents state it: doc 1: Oneida Community: The branches were closed in 1854 except for the Wallingford branch, which operated until devastated by a tornado in 1878. The Oneida Community dissolved in 1881, and eventually becam",
+   "evidence": [
+    "doc 1: Oneida Community: The branches were closed in 1854 except for the Wallingford branch, which operated until devastated by a tornado in 1878. The Oneida Community dissolved in 1881, and eventually becam"
+   ]
+  },
+  {
+   "session": "20261103-120636-fd5795",
+   "claim": "Pierrepont Noyes ran this company for many years",
+   "verdict": "facts:pass:verified",
+   "why": "the documents state it: doc 10: Pierrepont Noyes: He was brought up in the Oneida Community, a religious Utopian group. Noyes later became the head of Oneida Limited, a position he held for many years.",
+   "evidence": [
+    "doc 10: Pierrepont Noyes: He was brought up in the Oneida Community, a religious Utopian group. Noyes later became the head of Oneida Limited, a position he held for many years."
+   ]
+  },
+  {
+   "session": "20261103-120636-fd5795",
+   "claim": "Consequently, the answer is Oneida Limited",
+   "verdict": "inference-nli:unknown:None",
+   "why": "the entailment model doesn't find that it follows from b1, b2. State the missing link as a fact from the documents and cite it too",
+   "evidence": [
+    "b1",
+    "b2"
+   ]
+  },
+  {
+   "session": "20261103-120636-fd5795",
+   "claim": "The Oneida Community evolved into the giant silverware firm Oneida Limited",
+   "verdict": "facts:pass:verified",
+   "why": "the documents state it: doc 1: Oneida Community: The branches were closed in 1854 except for the Wallingford branch, which operated until devastated by a tornado in 1878. The Oneida Community dissolved in 1881, and eventually becam",
+   "evidence": [
+    "doc 1: Oneida Community: The branches were closed in 1854 except for the Wallingford branch, which operated until devastated by a tornado in 1878. The Oneida Community dissolved in 1881, and eventually becam"
+   ]
+  },
+  {
+   "session": "20261103-120636-fd5795",
+   "claim": "Pierrepont Noyes became the head of this new firm and held the position for many years",
+   "verdict": "facts:unknown:None",
+   "why": "no document passage states this. Restate closely the sentence that says it and name its document, or drop the claim if no document says it",
+   "evidence": []
+  },
+  {
+   "session": "20261103-120636-fd5795",
+   "claim": "Therefore, the answer is Oneida Limited",
+   "verdict": "inference-nli:unknown:None",
+   "why": "the entailment model doesn't find that it follows from b4, b5. State the missing link as a fact from the documents and cite it too",
+   "evidence": [
+    "b4",
+    "b5"
+   ]
+  },
+  {
+   "session": "20261103-121520-0ee294",
+   "claim": "Plateau is identified as a two-player abstract strategy board game",
+   "verdict": "facts:pass:verified",
+   "why": "the documents state it: doc 4: Plateau (game): Plateau is a two-player abstract strategy board game invented by Jim Albea.",
+   "evidence": [
+    "doc 4: Plateau (game): Plateau is a two-player abstract strategy board game invented by Jim Albea."
+   ]
+  },
+  {
+   "session": "20261103-121520-0ee294",
+   "claim": "Colt Express is identified as a railway-themed family board game",
+   "verdict": "facts:pass:verified",
+   "why": "the documents state it: doc 10: Colt Express: Colt Express is a railway-themed family board game designed by Christophe Raimbault, Illustrated by Ian Parovel and Jordi Valbuena, published in 2014 by Ludonaute and distributed by Asmo",
+   "evidence": [
+    "doc 10: Colt Express: Colt Express is a railway-themed family board game designed by Christophe Raimbault, Illustrated by Ian Parovel and Jordi Valbuena, published in 2014 by Ludonaute and distributed by Asmo"
+   ]
+  },
+  {
+   "session": "20261103-121520-0ee294",
+   "claim": "The main difference contrasts the specific 'two-player' count and 'abstract' style with the broader 'railway-themed' scope and 'family' demographic",
+   "verdict": "inference-nli:unknown:None",
+   "why": "the entailment model doesn't find that it follows from b1, b2. State the missing link as a fact from the documents and cite it too",
+   "evidence": [
+    "b1",
+    "b2"
+   ]
+  },
+  {
+   "session": "20261103-121520-0ee294",
+   "claim": "Plateau is identified as a two-player abstract strategy board game",
+   "verdict": "facts:pass:verified",
+   "why": "the documents state it: doc 4: Plateau (game): Plateau is a two-player abstract strategy board game invented by Jim Albea.",
+   "evidence": [
+    "doc 4: Plateau (game): Plateau is a two-player abstract strategy board game invented by Jim Albea."
+   ]
+  },
+  {
+   "session": "20261103-121520-0ee294",
+   "claim": "Colt Express is identified as a railway-themed family board game",
+   "verdict": "facts:pass:verified",
+   "why": "the documents state it: doc 10: Colt Express: Colt Express is a railway-themed family board game designed by Christophe Raimbault, Illustrated by Ian Parovel and Jordi Valbuena, published in 2014 by Ludonaute and distributed by Asmo",
+   "evidence": [
+    "doc 10: Colt Express: Colt Express is a railway-themed family board game designed by Christophe Raimbault, Illustrated by Ian Parovel and Jordi Valbuena, published in 2014 by Ludonaute and distributed by Asmo"
+   ]
+  },
+  {
+   "session": "20261103-121520-0ee294",
+   "claim": "The main difference contrasts the specific 'two-player' count and 'abstract' style with the broader 'railway-themed' scope and 'family' demographic",
+   "verdict": "inference-nli:pass:supported",
+   "why": "the entailment model finds it follows from b3 (99%)",
+   "evidence": [
+    "b3"
+   ]
+  },
+  {
+   "session": "20261103-121520-0ee294",
+   "claim": "Plateau is identified as a two-player abstract strategy game",
+   "verdict": "facts:pass:verified",
+   "why": "the documents state it: doc 4: Plateau (game): Plateau is a two-player abstract strategy board game invented by Jim Albea.",
+   "evidence": [
+    "doc 4: Plateau (game): Plateau is a two-player abstract strategy board game invented by Jim Albea."
+   ]
+  },
+  {
+   "session": "20261103-121520-0ee294",
+   "claim": "Colt Express is identified as a railway-themed family board game",
+   "verdict": "facts:pass:verified",
+   "why": "the documents state it: doc 10: Colt Express: Colt Express is a railway-themed family board game designed by Christophe Raimbault, Illustrated by Ian Parovel and Jordi Valbuena, published in 2014 by Ludonaute and distributed by Asmo",
+   "evidence": [
+    "doc 10: Colt Express: Colt Express is a railway-themed family board game designed by Christophe Raimbault, Illustrated by Ian Parovel and Jordi Valbuena, published in 2014 by Ludonaute and distributed by Asmo"
+   ]
+  },
+  {
+   "session": "20261103-121520-0ee294",
+   "claim": "The main difference contrasts the specific player count with the broader thematic scope",
+   "verdict": "inference-nli:unknown:None",
+   "why": "the entailment model doesn't find that it follows from b7, b8. State the missing link as a fact from the documents and cite it too",
+   "evidence": [
+    "b7",
+    "b8"
+   ]
+  }
+ ]
+}
