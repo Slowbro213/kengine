@@ -66,6 +66,30 @@ def test_cli_eval_baseline_writes_results(monkeypatch: pytest.MonkeyPatch, tmp_p
     assert json.loads((dirs[0] / "config.json").read_text())["solver"] == "baseline"
 
 
+def test_cli_eval_train_dev_runs_the_held_back_stories(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    use_backend(monkeypatch, ScriptedBackend([ScriptedReply(content="Final answer: True")]))
+    item = EvalItem(id="folio-train-1", suite="folio", question="q", gold="True", answer_format="f")
+
+    def rows(*args: object) -> list[dict[str, object]]:
+        return []
+
+    def held_back(rows: object) -> list[EvalItem]:
+        return [item]
+
+    monkeypatch.setattr(suites, "load_rows", rows)
+    monkeypatch.setattr(main, "dev_items", held_back)
+    args = ["eval", "folio", "--split", "train-dev", "--out", str(tmp_path / "o")]
+    r = runner.invoke(main.app, args)
+    assert r.exit_code == 0, r.output
+    (d,) = (tmp_path / "o").iterdir()
+    assert d.name.endswith("-folio-baseline-train-dev-none")
+    assert json.loads((d / "config.json").read_text())["n_items"] == 1
+    r = runner.invoke(main.app, ["eval", "gsm8k", "--split", "train-dev"])
+    assert r.exit_code == 2 and "folio only" in r.output
+
+
 # `kengine run` formalizes the task's givens first (logic.formalize_givens is on by default).
 FORMALIZE_NONE = ScriptedReply(content='{"givens": []}')
 

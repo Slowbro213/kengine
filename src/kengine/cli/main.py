@@ -87,8 +87,15 @@ def eval_cmd(
         str | None,
         typer.Option(help="K/N: run items K, K+N, ... into a shard-KofN subdir; see eval-merge."),
     ] = None,
+    split: Annotated[
+        Literal["validation", "train-dev"],
+        typer.Option(help="train-dev: FOLIO-train's held-back stories (folio only; ignores size)"),
+    ] = "validation",
 ) -> None:
     """Run a suite; results go to OUT/<date>-<suite>-<solver>-<size>-<profile>[-firstN]."""
+    if split == "train-dev" and suite != "folio":
+        typer.echo("--split train-dev applies to folio only", err=True)
+        raise typer.Exit(2)
     cfg, _ = _config()
     k, n = _parse_shard(shard) if shard is not None else (1, 1)
     profile_name = "none"
@@ -98,8 +105,9 @@ def eval_cmd(
     elif profile is not None:
         typer.echo("--profile applies to the kengine solver only", err=True)
         raise typer.Exit(2)
+    where = "train-dev" if split == "train-dev" else size
     out_dir = out / results_dir_name(
-        datetime.date.today(), suite, solver, size, profile_name, limit
+        datetime.date.today(), suite, solver, where, profile_name, limit
     )
     if shard is not None:
         out_dir = out_dir / shard_dir_name(k, n)
@@ -113,14 +121,17 @@ def eval_cmd(
     else:
         the_solver = BaselineSolver(backend, cfg.roles.baseline, budget)
     health = backend.health()
-    items = suites.load_items(suite, size, seed)
+    if split == "train-dev":
+        items = dev_items(suites.load_rows("tasksource/folio", None, "train"))
+    else:
+        items = suites.load_items(suite, size, seed)
     if limit is not None:
         items = items[:limit]
     items = items[k - 1 :: n]
     run_config: dict[str, object] = {
         "suite": suite,
         "solver": solver,
-        "size": size,
+        "size": where,
         "profile": profile_name,
         "seed": seed,
         "limit": limit,
