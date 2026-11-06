@@ -4,7 +4,7 @@ from kengine.beliefs.status import Status
 from kengine.beliefs.store import BeliefStore
 from kengine.checkers.base import CheckerKind, Outcome, Verdict
 from kengine.claims.schema import ClaimType, Formal, Source, SourceKind
-from kengine.loop.gate import evaluate_gate
+from kengine.loop.gate import answer_stated, evaluate_gate
 from kengine.loop.profiles import GatePolicy
 
 SRC = Source(kind=SourceKind.MODEL)
@@ -165,3 +165,30 @@ def test_from_givens_needs_an_answer_about_a_conclusion_but_no_citations():
     d = evaluate_gate([], s, GatePolicy.STANDARD, "True", MAMMAL, from_givens=True)
     assert d.allowed and d.shown_by_givens == ["b1", "b2"]
     assert not evaluate_gate([], s, GatePolicy.STANDARD, from_givens=True).allowed
+
+
+@pytest.fixture
+def heat() -> BeliefStore:
+    store = BeliefStore.open(":memory:")
+    store.add(
+        type=ClaimType.FACT,
+        text="Heat was directed by Michael Mann.",
+        premises=[],
+        source=SRC,
+        step=1,
+    )
+    _set(store, "b1", Status.VERIFIED)
+    return store
+
+
+def test_an_answer_named_in_the_claims_it_rests_on_passes(heat: BeliefStore):
+    assert answer_stated("Michael Mann", ["b1"], heat) is None
+    assert answer_stated("yes", ["b1"], heat) is None
+    why = answer_stated("Ridley Scott", ["b1"], heat)
+    assert why is not None and "ridley, scott" in why
+
+
+def test_the_gate_applies_it_only_when_asked(heat: BeliefStore):
+    d = evaluate_gate(["b1"], heat, GatePolicy.STANDARD, "Ridley Scott", require_stated=True)
+    assert not d.allowed and "aren't in the claims it rests on" in d.reasons[0]
+    assert evaluate_gate(["b1"], heat, GatePolicy.STANDARD, "Ridley Scott").allowed

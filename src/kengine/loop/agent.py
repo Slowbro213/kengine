@@ -178,6 +178,7 @@ class Agent:
         self._goal = ""
         self._reformalized: set[str] = set()  # givens translated again; each gets one retry
         self._conclusion: Formal | None = None  # the task's conclusion, for the answer check
+        self._require_stated = False  # document questions: the answer must be stated
 
     @property
     def store(self) -> BeliefStore:
@@ -187,6 +188,7 @@ class Agent:
 
     def run(self, task: Task) -> RunResult:
         self._reset()
+        self._require_stated = bool(task.documents)
         self._log(SessionStartedEvent(step=0, task=task.model_dump(mode="json")))
         try:
             self._loop(task)
@@ -524,6 +526,7 @@ class Agent:
             answer,
             self._conclusion,
             from_givens=self.answer_from_givens,
+            require_stated=self._require_stated,
         )
         self._log(GateEvent(step=step.n, decision=decision.model_dump(mode="json")))
         if decision.allowed:

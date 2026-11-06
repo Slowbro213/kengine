@@ -6,7 +6,10 @@ claims.
 
 With `from_givens`, a True or False answer the model's citations don't support still passes
 when the givens alone show it (`givens_show`). The model picked the answer and the translation
-proves it, so two sources agree; the decision records which givens did it."""
+proves it, so two sources agree; the decision records which givens did it.
+
+For questions about documents (`require_stated`), the answer's words must also appear in what
+it rests on."""
 
 from __future__ import annotations
 
@@ -20,6 +23,7 @@ from kengine.beliefs.status import TERMINAL, Status
 from kengine.checkers.base import BeliefView
 from kengine.checkers.logic import check_answer, givens_show
 from kengine.claims.schema import ClaimType, Formal
+from kengine.eval.answers import normalize_text
 from kengine.loop.profiles import GatePolicy
 
 _STANDARD_OK = frozenset(
@@ -44,6 +48,7 @@ def evaluate_gate(
     answer: str | None = None,
     conclusion: Formal | None = None,
     from_givens: bool = False,
+    require_stated: bool = False,
 ) -> GateDecision:
     """Check the cited claims and everything they transitively rest on, and that `answer`
     is right about `conclusion` when there is one."""
@@ -81,6 +86,10 @@ def evaluate_gate(
         why = check_answer(answer, conclusion, closure, view)
         if why is not None:
             reasons.append(why)
+    if require_stated and answer is not None and known and policy != GatePolicy.PERMISSIVE:
+        why = answer_stated(answer, closure, view)
+        if why is not None:
+            reasons.append(why)
     if reasons and judged and from_givens:
         assert conclusion is not None and answer is not None
         shown = givens_show(answer, conclusion, view)
@@ -94,6 +103,25 @@ def evaluate_gate(
             )
     return GateDecision(
         allowed=not reasons, blocking=blocking, acted_on_assumptions=assumed, reasons=reasons
+    )
+
+
+_YES_NO = frozenset({"yes", "no"})
+
+
+def answer_stated(answer: str, closure: Sequence[str], view: BeliefView) -> str | None:
+    """For questions about documents: every word of the answer must be in the claims it
+    rests on, so a checked fact can't be cited for an answer it doesn't give."""
+    words = normalize_text(answer).split()
+    if not words or (len(words) == 1 and words[0] in _YES_NO):
+        return None
+    have = set(normalize_text(" ".join(view.get(i).claim.text for i in closure)).split())
+    missing = [w for w in dict.fromkeys(words) if w not in have]
+    if not missing:
+        return None
+    return (
+        f"the answer's words {', '.join(missing)} aren't in the claims it rests on; rest it "
+        "on the checked fact that states the answer"
     )
 
 

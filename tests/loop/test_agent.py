@@ -7,8 +7,9 @@ from kengine.backend.types import FinishReason
 from kengine.beliefs.status import Status
 from kengine.checkers import default_checkers
 from kengine.checkers.arithmetic import ArithmeticChecker
-from kengine.checkers.base import Checker
+from kengine.checkers.base import BeliefView, Checker, CheckerKind, Outcome, Verdict
 from kengine.checkers.structure import StructureChecker
+from kengine.claims.schema import Claim as ClaimRecord
 from kengine.claims.schema import ClaimType, SourceKind
 from kengine.config import RolesConfig
 from kengine.loop.agent import NO_LIMITS, Agent, Limits
@@ -594,3 +595,38 @@ def test_the_answer_is_checked_against_the_conclusion(tmp_path: Path):
     assert gates[0].decision["reasons"] == [  # type: ignore[union-attr]
         "the conclusion follows from b3, so it isn't false"
     ]
+
+
+class VerifiesFacts:
+    id = "stub"
+    kind = CheckerKind.EVIDENCE
+
+    def applies_to(self, claim: ClaimRecord) -> bool:
+        return claim.type == ClaimType.FACT
+
+    def check(self, claim: ClaimRecord, view: BeliefView) -> Verdict:
+        return Verdict(
+            checker_id=self.id,
+            checker_kind=self.kind,
+            outcome=Outcome.PASS,
+            status=Status.VERIFIED,
+            explanation="stub",
+        )
+
+
+def test_a_document_answer_must_be_stated_by_what_it_rests_on(tmp_path: Path):
+    script = [
+        think(),
+        extract_json(
+            [claim("c1", "fact", "Heat was directed by Michael Mann.")],
+            final("Ridley Scott", ["c1"]),
+        ),
+    ]
+    agent, _ = make_agent(
+        script, "quick", tmp_path, limits=Limits(max_steps=1), checkers=[VerifiesFacts()]
+    )
+    task = Task(goal="Who directed Heat?", documents=["Heat: Heat was directed by Michael Mann."])
+    r = agent.run(task)
+    assert (r.status, r.blocked_answer) == ("blocked", "Ridley Scott")
+    gates = [e for e in events(r.session_dir) if e["kind"] == "gate"]
+    assert "aren't in the claims it rests on" in json.dumps(gates)
