@@ -1,0 +1,3 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+folio/kengine/small: 5 items -> 2026-11-06-folio-kengine-small-quick-first30/shard-5of6
+n=5 headline=0.400 exact=0.400 abstention=0.600 answered_acc=1.000 statuses={'blocked': 1, 'error': 1, 'partial': 1, 'answered': 2} mean_wall_s=921.5

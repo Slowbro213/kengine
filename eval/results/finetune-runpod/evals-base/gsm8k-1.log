@@ -1,0 +1,3 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+gsm8k/kengine/smoke: 5 items -> 2026-11-06-gsm8k-kengine-smoke-quick/shard-1of2
+n=5 headline=0.600 exact=0.600 abstention=0.400 answered_acc=1.000 statuses={'answered': 3, 'partial': 2} mean_wall_s=1145.1

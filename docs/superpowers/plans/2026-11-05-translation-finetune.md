@@ -1,6 +1,6 @@
 # Fine-tune plan: teach the model to translate into logic
 
-**Status: approved by the owner on 2026-11-05. The provider is RunPod.** The local prep is done (see "What the local test found"). The paid run waits until the owner sets up a pod.
+**Status: approved by the owner on 2026-11-05, and run on RunPod on 2026-11-06.** Translation improved a lot (probe-formal: 134 right of 203, against 84), but the full agent barely moved. See "What the RunPod run found".
 
 The spec lists fine-tuning as a v1 non-goal. The owner asked to consider it once Checkpoint C showed where the errors come from, so this plan would change that.
 
@@ -89,6 +89,47 @@ Two caveats:
 The probe results are in `eval/results/finetune-local/`.
 
 **On the rented GPU** only training runs (`finetune/run.sh`). The adapter comes back home, where it is merged, converted and quantized the same way as the baseline.
+
+## What the RunPod run found (2026-11-06)
+
+In the end everything ran on the pod: training, merge, GGUF export and all three checks. That was one RunPod A40 (48 GB, secure cloud, $0.59/h) for about 3.5 hours, $2.04 in total. Training took 0.49 h, and the best checkpoint came after the first pass. The trained model is kept at home as `~/.local/share/kengine/models/ours-9B-ft1-Q4_K_M.gguf`, and the adapter is in `~/.local/share/kengine/ft/run1/`.
+
+**Check 1 passes easily.** probe-formal on all 203 items, with both models quantized the same way on the pod:
+
+| Model | Right | Right, True or False | Wrong, True or False | No answer |
+|---|---|---|---|---|
+| 9B, untuned (pod) | 85 | – | – | – |
+| 9B, untuned (home baseline) | 84 | 29 | 10 | 46 |
+| **9B, tuned** | **134** | **70** | **3** | **10** |
+
+The stop rule asked for 94. The most common miss is still Uncertain where the gold label is True or False (56 times, against 63).
+
+**Checks 2 and 3: the agent as a whole hasn't gained yet.**
+
+| Run | folio, 30 items | gsm8k smoke, 10 items |
+|---|---|---|
+| i1 model at home (m2.1-fixes) | 4 right, **1 wrong**, 25 blocked or partial | 10 right |
+| **Tuned (pod)** | **5 right, 0 wrong**, 25 blocked or partial | 8 right, 0 wrong, 2 blocked |
+| Untuned (pod), stopped partway | 3 right of 15 done, 0 wrong | 6 right of 9 done, 0 wrong |
+
+On the 15 folio items the untuned pod run finished, the tuned model got 2 right, the untuned 3, and the home run 4. On the 9 shared gsm8k items, the tuned model got 8 and the untuned pod run 6. So the pod setup costs a little on its own: 8 parallel streams per model at about 20 tokens/s each, and a 30-minute reply timeout. **The tuned model is no worse than the untuned one end to end, but not clearly better.** No wrong answer got through in any pod run.
+
+**Why the better translation doesn't show up yet.** The agent is blocked at the reasoning step, not the translation.
+
+- In 14 of the tuned model's 19 blocked folio runs, the answer it was trying to give was right. The gate refused it because a step didn't follow ("b79 doesn't follow from b72, b54") or because the cited steps didn't show the conclusion.
+- On the same 30 items, z3 working from the tuned translation alone gets 24 right: 8 True or False and 16 Uncertain. It gets 5 Uncertain wrong and gives no definite wrong answer.
+
+**Next (each needs the owner's approval):**
+
+1. A free change at home: let a definite True or False from the translation alone count as an answer. Only accept it when a second check agrees, either the model's own answer or a second translation. Test it first on items outside the eval set: the 43 held-back stories plus a fresh FOLIO slice. Keep it only if it gives no wrong answers there.
+2. Stage 2: train the reasoning step. The data would be checker-valid step chains, generated from FOLIO-train's expert logic. Build and test it on the 0.8B at home first, then use a short pod (about $2).
+
+**Lessons for the next pod:**
+
+- The CPU quota is about 7.6 cores, not the 96 `nproc` reports.
+- RunPod's nginx holds port 8081.
+- Base THINK calls can exceed a 600 s timeout when 16 streams share one GPU.
+- Results, logs and the probe outputs are in `eval/results/finetune-runpod/`.
 
 ## What the owner does
 

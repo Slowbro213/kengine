@@ -1,0 +1,190 @@
++ W=/root/work
++ UV=/root/.local/bin/uv
+++ pgrep -f 'kengine eval'
++ for p in $(pgrep -f "kengine eval")
+++ readlink /proc/101911/cwd
++ '[' /root/work/evals-base = /root/work/evals-base ']'
++ kill 101911
++ for p in $(pgrep -f "kengine eval")
+++ readlink /proc/101912/cwd
++ '[' /root/work/evals-base = /root/work/evals-base ']'
++ kill 101912
++ for p in $(pgrep -f "kengine eval")
+++ readlink /proc/101913/cwd
++ '[' /root/work/evals-base = /root/work/evals-base ']'
++ kill 101913
++ for p in $(pgrep -f "kengine eval")
+++ readlink /proc/101914/cwd
++ '[' /root/work/evals-base = /root/work/evals-base ']'
++ kill 101914
++ for p in $(pgrep -f "kengine eval")
+++ readlink /proc/101915/cwd
++ '[' /root/work/evals-base = /root/work/evals-base ']'
++ kill 101915
++ for p in $(pgrep -f "kengine eval")
+++ readlink /proc/101916/cwd
++ '[' /root/work/evals-base = /root/work/evals-base ']'
++ kill 101916
++ for p in $(pgrep -f "kengine eval")
+++ readlink /proc/101917/cwd
++ '[' /root/work/evals-base = /root/work/evals-base ']'
++ kill 101917
++ for p in $(pgrep -f "kengine eval")
+++ readlink /proc/101918/cwd
++ '[' /root/work/evals-base = /root/work/evals-base ']'
++ kill 101918
++ for p in $(pgrep -f "kengine eval")
+++ readlink /proc/101919/cwd
++ '[' /root/work/evals-tuned = /root/work/evals-base ']'
++ true
++ for p in $(pgrep -f "kengine eval")
+++ readlink /proc/101920/cwd
++ '[' /root/work/evals-tuned = /root/work/evals-base ']'
++ true
++ for p in $(pgrep -f "kengine eval")
+++ readlink /proc/101921/cwd
++ '[' /root/work/evals-tuned = /root/work/evals-base ']'
++ true
++ for p in $(pgrep -f "kengine eval")
+++ readlink /proc/101922/cwd
++ '[' /root/work/evals-tuned = /root/work/evals-base ']'
++ true
++ for p in $(pgrep -f "kengine eval")
+++ readlink /proc/101923/cwd
++ '[' /root/work/evals-tuned = /root/work/evals-base ']'
++ true
++ for p in $(pgrep -f "kengine eval")
+++ readlink /proc/101924/cwd
++ '[' /root/work/evals-tuned = /root/work/evals-base ']'
++ true
++ for p in $(pgrep -f "kengine eval")
+++ readlink /proc/101927/cwd
++ '[' /root/work/evals-tuned = /root/work/evals-base ']'
++ true
++ for p in $(pgrep -f "kengine eval")
+++ readlink /proc/101959/cwd
++ '[' '' = /root/work/evals-base ']'
++ true
++ for p in $(pgrep -f "kengine eval")
+++ readlink /proc/101960/cwd
++ '[' '' = /root/work/evals-base ']'
++ true
++ for p in $(pgrep -f "kengine eval")
+++ readlink /proc/101961/cwd
++ '[' /root/work/evals-base = /root/work/evals-base ']'
++ kill 101961
++ for p in $(pgrep -f "kengine eval")
+++ readlink /proc/101962/cwd
++ '[' '' = /root/work/evals-base ']'
++ true
++ for p in $(pgrep -f "kengine eval")
+++ readlink /proc/101963/cwd
++ '[' /root/work/evals-tuned = /root/work/evals-base ']'
++ true
++ for p in $(pgrep -f "kengine eval")
+++ readlink /proc/101964/cwd
++ '[' '' = /root/work/evals-base ']'
++ true
++ for p in $(pgrep -f "kengine eval")
+++ readlink /proc/101965/cwd
++ '[' '' = /root/work/evals-base ']'
++ true
++ for p in $(pgrep -f "kengine eval")
+++ readlink /proc/101966/cwd
++ '[' '' = /root/work/evals-base ']'
++ true
++ for p in $(pgrep -f "kengine eval")
+++ readlink /proc/101967/cwd
++ '[' '' = /root/work/evals-base ']'
++ true
++ for p in $(pgrep -f "kengine eval")
+++ readlink /proc/101968/cwd
++ '[' /root/work/evals-tuned = /root/work/evals-base ']'
++ true
++ for p in $(pgrep -f "kengine eval")
+++ readlink /proc/101969/cwd
++ '[' /root/work/evals-tuned = /root/work/evals-base ']'
++ true
++ for p in $(pgrep -f "kengine eval")
+++ readlink /proc/101970/cwd
++ '[' /root/work/evals-tuned = /root/work/evals-base ']'
++ true
++ for p in $(pgrep -f "kengine eval")
+++ readlink /proc/101971/cwd
++ '[' /root/work/evals-tuned = /root/work/evals-base ']'
++ true
++ for p in $(pgrep -f "kengine eval")
+++ readlink /proc/101972/cwd
++ '[' /root/work/evals-tuned = /root/work/evals-base ']'
++ true
++ for p in $(pgrep -f "kengine eval")
+++ readlink /proc/101973/cwd
++ '[' /root/work/evals-tuned = /root/work/evals-base ']'
++ true
++ for p in $(pgrep -f "kengine eval")
+++ readlink /proc/104013/cwd
++ '[' /root = /root/work/evals-base ']'
++ true
++ sleep 5
++ cd /root/work/evals-base
++ printf '[backend]\nbase_url = "http://127.0.0.1:18081"\ntimeout_s = 1800\n'
++ for f in 2026-*/shard-*/items.jsonl
++ grep -v '"status":"error"' 2026-11-06-folio-kengine-small-quick-first30/shard-1of6/items.jsonl
++ true
++ mv 2026-11-06-folio-kengine-small-quick-first30/shard-1of6/items.jsonl.tmp 2026-11-06-folio-kengine-small-quick-first30/shard-1of6/items.jsonl
++ for f in 2026-*/shard-*/items.jsonl
++ grep -v '"status":"error"' 2026-11-06-folio-kengine-small-quick-first30/shard-2of6/items.jsonl
++ true
++ mv 2026-11-06-folio-kengine-small-quick-first30/shard-2of6/items.jsonl.tmp 2026-11-06-folio-kengine-small-quick-first30/shard-2of6/items.jsonl
++ for f in 2026-*/shard-*/items.jsonl
++ grep -v '"status":"error"' 2026-11-06-folio-kengine-small-quick-first30/shard-3of6/items.jsonl
++ true
++ mv 2026-11-06-folio-kengine-small-quick-first30/shard-3of6/items.jsonl.tmp 2026-11-06-folio-kengine-small-quick-first30/shard-3of6/items.jsonl
++ for f in 2026-*/shard-*/items.jsonl
++ grep -v '"status":"error"' 2026-11-06-folio-kengine-small-quick-first30/shard-4of6/items.jsonl
++ true
++ mv 2026-11-06-folio-kengine-small-quick-first30/shard-4of6/items.jsonl.tmp 2026-11-06-folio-kengine-small-quick-first30/shard-4of6/items.jsonl
++ for f in 2026-*/shard-*/items.jsonl
++ grep -v '"status":"error"' 2026-11-06-folio-kengine-small-quick-first30/shard-5of6/items.jsonl
++ true
++ mv 2026-11-06-folio-kengine-small-quick-first30/shard-5of6/items.jsonl.tmp 2026-11-06-folio-kengine-small-quick-first30/shard-5of6/items.jsonl
++ for f in 2026-*/shard-*/items.jsonl
++ grep -v '"status":"error"' 2026-11-06-folio-kengine-small-quick-first30/shard-6of6/items.jsonl
++ true
++ mv 2026-11-06-folio-kengine-small-quick-first30/shard-6of6/items.jsonl.tmp 2026-11-06-folio-kengine-small-quick-first30/shard-6of6/items.jsonl
++ for f in 2026-*/shard-*/items.jsonl
++ grep -v '"status":"error"' 2026-11-06-gsm8k-kengine-smoke-quick/shard-1of2/items.jsonl
++ true
++ mv 2026-11-06-gsm8k-kengine-smoke-quick/shard-1of2/items.jsonl.tmp 2026-11-06-gsm8k-kengine-smoke-quick/shard-1of2/items.jsonl
++ for f in 2026-*/shard-*/items.jsonl
++ grep -v '"status":"error"' 2026-11-06-gsm8k-kengine-smoke-quick/shard-2of2/items.jsonl
++ true
++ mv 2026-11-06-gsm8k-kengine-smoke-quick/shard-2of2/items.jsonl.tmp 2026-11-06-gsm8k-kengine-smoke-quick/shard-2of2/items.jsonl
++ pids=
++ for k in 1 2 3 4 5 6
++ pids=' 104065'
++ for k in 1 2 3 4 5 6
++ pids=' 104065 104066'
++ for k in 1 2 3 4 5 6
++ /root/.local/bin/uv run --project /root/kengine kengine eval folio --solver kengine --size small --profile quick --limit 30 --shard 1/6 --out .
++ /root/.local/bin/uv run --project /root/kengine kengine eval folio --solver kengine --size small --profile quick --limit 30 --shard 2/6 --out .
++ pids=' 104065 104066 104067'
++ for k in 1 2 3 4 5 6
++ pids=' 104065 104066 104067 104068'
++ /root/.local/bin/uv run --project /root/kengine kengine eval folio --solver kengine --size small --profile quick --limit 30 --shard 3/6 --out .
++ for k in 1 2 3 4 5 6
++ pids=' 104065 104066 104067 104068 104069'
++ for k in 1 2 3 4 5 6
++ /root/.local/bin/uv run --project /root/kengine kengine eval folio --solver kengine --size small --profile quick --limit 30 --shard 4/6 --out .
++ /root/.local/bin/uv run --project /root/kengine kengine eval folio --solver kengine --size small --profile quick --limit 30 --shard 5/6 --out .
++ pids=' 104065 104066 104067 104068 104069 104070'
++ for k in 1 2
++ /root/.local/bin/uv run --project /root/kengine kengine eval folio --solver kengine --size small --profile quick --limit 30 --shard 6/6 --out .
++ pids=' 104065 104066 104067 104068 104069 104070 104071'
++ for k in 1 2
++ pids=' 104065 104066 104067 104068 104069 104070 104071 104072'
++ /root/.local/bin/uv run --project /root/kengine kengine eval gsm8k --solver kengine --size smoke --profile quick --shard 1/2 --out .
++ fail=0
++ for p in $pids
++ wait 104065
++ /root/.local/bin/uv run --project /root/kengine kengine eval gsm8k --solver kengine --size smoke --profile quick --shard 2/2 --out .

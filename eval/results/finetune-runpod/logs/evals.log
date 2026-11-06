@@ -1,0 +1,130 @@
++ L=/root/llama.cpp
++ W=/root/work
++ UV=/root/.local/bin/uv
++ cd /root/kengine
++ git pull -q
++ /root/.local/bin/uv sync -q --extra eval
++ git log --oneline -1
+effe22b feat: kengine eval --shard K/N and eval-merge, to run one eval as parallel parts
++ pkill -f 'llama-server -m /root/work'
++ sleep 5
++ port=18081
++ for n in base tuned
++ mkdir -p /root/work/evals-base
++ setsid nohup /root/llama.cpp/build/bin/llama-server -m /root/work/base-Q4_K_M.gguf -ngl 99 -c 262144 -np 8 -fa on -ctk q8_0 -ctv q8_0 --reasoning-format deepseek --host 127.0.0.1 --port 18081 --spec-type ngram-mod
++ printf '[backend]\nbase_url = "http://127.0.0.1:%s"\n' 18081
++ port=18082
++ for n in base tuned
++ mkdir -p /root/work/evals-tuned
++ setsid nohup /root/llama.cpp/build/bin/llama-server -m /root/work/tuned-Q4_K_M.gguf -ngl 99 -c 262144 -np 8 -fa on -ctk q8_0 -ctv q8_0 --reasoning-format deepseek --host 127.0.0.1 --port 18082 --spec-type ngram-mod
++ printf '[backend]\nbase_url = "http://127.0.0.1:%s"\n' 18082
++ port=18083
++ for p in 18081 18082
++ timeout 300 bash -c 'until curl -sf http://127.0.0.1:18081/health >/dev/null; do sleep 2; done'
++ for p in 18081 18082
++ timeout 300 bash -c 'until curl -sf http://127.0.0.1:18082/health >/dev/null; do sleep 2; done'
++ nvidia-smi --query-gpu=memory.used --format=csv
+memory.used [MiB]
+21998 MiB
++ pids=
++ for n in base tuned
++ cd /root/work/evals-base
++ for k in 1 2 3 4 5 6
++ pids=' 101911'
++ /root/.local/bin/uv run --project /root/kengine kengine eval folio --solver kengine --size small --profile quick --limit 30 --shard 1/6 --out .
++ for k in 1 2 3 4 5 6
++ pids=' 101911 101912'
++ for k in 1 2 3 4 5 6
++ /root/.local/bin/uv run --project /root/kengine kengine eval folio --solver kengine --size small --profile quick --limit 30 --shard 2/6 --out .
++ pids=' 101911 101912 101913'
++ for k in 1 2 3 4 5 6
++ /root/.local/bin/uv run --project /root/kengine kengine eval folio --solver kengine --size small --profile quick --limit 30 --shard 3/6 --out .
++ pids=' 101911 101912 101913 101914'
++ for k in 1 2 3 4 5 6
++ /root/.local/bin/uv run --project /root/kengine kengine eval folio --solver kengine --size small --profile quick --limit 30 --shard 4/6 --out .
++ pids=' 101911 101912 101913 101914 101915'
++ for k in 1 2 3 4 5 6
++ /root/.local/bin/uv run --project /root/kengine kengine eval folio --solver kengine --size small --profile quick --limit 30 --shard 5/6 --out .
++ pids=' 101911 101912 101913 101914 101915 101916'
++ for k in 1 2
++ /root/.local/bin/uv run --project /root/kengine kengine eval folio --solver kengine --size small --profile quick --limit 30 --shard 6/6 --out .
++ pids=' 101911 101912 101913 101914 101915 101916 101917'
++ for k in 1 2
++ /root/.local/bin/uv run --project /root/kengine kengine eval gsm8k --solver kengine --size smoke --profile quick --shard 1/2 --out .
++ pids=' 101911 101912 101913 101914 101915 101916 101917 101918'
++ for n in base tuned
++ cd /root/work/evals-tuned
++ for k in 1 2 3 4 5 6
++ /root/.local/bin/uv run --project /root/kengine kengine eval gsm8k --solver kengine --size smoke --profile quick --shard 2/2 --out .
++ pids=' 101911 101912 101913 101914 101915 101916 101917 101918 101919'
++ for k in 1 2 3 4 5 6
++ /root/.local/bin/uv run --project /root/kengine kengine eval folio --solver kengine --size small --profile quick --limit 30 --shard 1/6 --out .
++ pids=' 101911 101912 101913 101914 101915 101916 101917 101918 101919 101920'
++ for k in 1 2 3 4 5 6
++ /root/.local/bin/uv run --project /root/kengine kengine eval folio --solver kengine --size small --profile quick --limit 30 --shard 2/6 --out .
++ pids=' 101911 101912 101913 101914 101915 101916 101917 101918 101919 101920 101921'
++ for k in 1 2 3 4 5 6
++ /root/.local/bin/uv run --project /root/kengine kengine eval folio --solver kengine --size small --profile quick --limit 30 --shard 3/6 --out .
++ pids=' 101911 101912 101913 101914 101915 101916 101917 101918 101919 101920 101921 101922'
++ for k in 1 2 3 4 5 6
++ /root/.local/bin/uv run --project /root/kengine kengine eval folio --solver kengine --size small --profile quick --limit 30 --shard 4/6 --out .
++ pids=' 101911 101912 101913 101914 101915 101916 101917 101918 101919 101920 101921 101922 101923'
++ for k in 1 2 3 4 5 6
++ /root/.local/bin/uv run --project /root/kengine kengine eval folio --solver kengine --size small --profile quick --limit 30 --shard 5/6 --out .
++ pids=' 101911 101912 101913 101914 101915 101916 101917 101918 101919 101920 101921 101922 101923 101924'
++ for k in 1 2
++ /root/.local/bin/uv run --project /root/kengine kengine eval folio --solver kengine --size small --profile quick --limit 30 --shard 6/6 --out .
++ pids=' 101911 101912 101913 101914 101915 101916 101917 101918 101919 101920 101921 101922 101923 101924 101925'
++ for k in 1 2
++ /root/.local/bin/uv run --project /root/kengine kengine eval gsm8k --solver kengine --size smoke --profile quick --shard 1/2 --out .
++ pids=' 101911 101912 101913 101914 101915 101916 101917 101918 101919 101920 101921 101922 101923 101924 101925 101927'
++ fail=0
++ for p in $pids
++ wait 101911
++ /root/.local/bin/uv run --project /root/kengine kengine eval gsm8k --solver kengine --size smoke --profile quick --shard 2/2 --out .
++ fail=1
++ for p in $pids
++ wait 101912
++ fail=1
++ for p in $pids
++ wait 101913
++ fail=1
++ for p in $pids
++ wait 101914
++ fail=1
++ for p in $pids
++ wait 101915
++ fail=1
++ for p in $pids
++ wait 101916
++ fail=1
++ for p in $pids
++ wait 101917
++ fail=1
++ for p in $pids
++ wait 101918
++ fail=1
++ for p in $pids
++ wait 101919
++ for p in $pids
++ wait 101920
++ for p in $pids
++ wait 101921
++ for p in $pids
++ wait 101922
++ for p in $pids
++ wait 101923
++ for p in $pids
++ wait 101924
++ for p in $pids
++ wait 101925
++ for p in $pids
++ wait 101927
++ for n in base tuned
++ for d in $W/evals-$n/2026-*
++ cd /root/work/evals-base
++ /root/.local/bin/uv run --project /root/kengine kengine eval-merge /root/work/evals-base/2026-11-06-folio-kengine-small-quick-first30
++ tail -1
+++ basename /root/work/evals-base/2026-11-06-folio-kengine-small-quick-first30
++ sed 's#^#base 2026-11-06-folio-kengine-small-quick-first30: #'
+shard-1of6 is unfinished: 3 of 5 items

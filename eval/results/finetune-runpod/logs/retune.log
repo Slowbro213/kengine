@@ -1,0 +1,582 @@
++ W=/root/work
++ UV=/root/.local/bin/uv
++ cd /root/work/evals-tuned
++ printf '[backend]\nbase_url = "http://127.0.0.1:18082"\ntimeout_s = 1800\n'
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ grep -q '^bash /root/evals.sh'
++ ps -eo args
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ grep -q '^bash /root/evals.sh'
++ ps -eo args
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ ps -eo args
++ grep -q '^bash /root/evals.sh'
++ sleep 30
++ grep -q '^bash /root/evals.sh'
++ ps -eo args
++ fail=0
++ for d in 2026-*
++ redo=
++ for s in $d/shard-*
++ f=2026-11-06-folio-kengine-small-quick-first30/shard-1of6/items.jsonl
++ grep -q '"status":"error"' 2026-11-06-folio-kengine-small-quick-first30/shard-1of6/items.jsonl
++ grep -v '"status":"error"' 2026-11-06-folio-kengine-small-quick-first30/shard-1of6/items.jsonl
++ mv 2026-11-06-folio-kengine-small-quick-first30/shard-1of6/items.jsonl.tmp 2026-11-06-folio-kengine-small-quick-first30/shard-1of6/items.jsonl
+++ basename 2026-11-06-folio-kengine-small-quick-first30/shard-1of6
++ redo=' shard-1of6'
++ for s in $d/shard-*
++ f=2026-11-06-folio-kengine-small-quick-first30/shard-2of6/items.jsonl
++ grep -q '"status":"error"' 2026-11-06-folio-kengine-small-quick-first30/shard-2of6/items.jsonl
++ for s in $d/shard-*
++ f=2026-11-06-folio-kengine-small-quick-first30/shard-3of6/items.jsonl
++ grep -q '"status":"error"' 2026-11-06-folio-kengine-small-quick-first30/shard-3of6/items.jsonl
++ for s in $d/shard-*
++ f=2026-11-06-folio-kengine-small-quick-first30/shard-4of6/items.jsonl
++ grep -q '"status":"error"' 2026-11-06-folio-kengine-small-quick-first30/shard-4of6/items.jsonl
++ for s in $d/shard-*
++ f=2026-11-06-folio-kengine-small-quick-first30/shard-5of6/items.jsonl
++ grep -q '"status":"error"' 2026-11-06-folio-kengine-small-quick-first30/shard-5of6/items.jsonl
++ grep -v '"status":"error"' 2026-11-06-folio-kengine-small-quick-first30/shard-5of6/items.jsonl
++ mv 2026-11-06-folio-kengine-small-quick-first30/shard-5of6/items.jsonl.tmp 2026-11-06-folio-kengine-small-quick-first30/shard-5of6/items.jsonl
+++ basename 2026-11-06-folio-kengine-small-quick-first30/shard-5of6
++ redo=' shard-1of6 shard-5of6'
++ for s in $d/shard-*
++ f=2026-11-06-folio-kengine-small-quick-first30/shard-6of6/items.jsonl
++ grep -q '"status":"error"' 2026-11-06-folio-kengine-small-quick-first30/shard-6of6/items.jsonl
+++ echo 2026-11-06-folio-kengine-small-quick-first30
+++ sed -E 's/^2026-11-06-([a-z0-9]+)-kengine-.*/\1/'
++ suite=folio
++ pids=
++ for s in $redo
+++ echo shard-1of6
+++ sed -E 's/shard-([0-9]+)of([0-9]+)/\1\/\2/'
++ kn=1/6
++ '[' folio = folio ']'
++ pids=' 108921'
++ /root/.local/bin/uv run --project /root/kengine kengine eval folio --solver kengine --size small --profile quick --limit 30 --shard 1/6 --out .
++ for s in $redo
+++ echo shard-5of6
+++ sed -E 's/shard-([0-9]+)of([0-9]+)/\1\/\2/'
++ kn=5/6
++ '[' folio = folio ']'
++ pids=' 108921 108925'
++ for p in $pids
++ wait 108921
++ /root/.local/bin/uv run --project /root/kengine kengine eval folio --solver kengine --size small --profile quick --limit 30 --shard 5/6 --out .
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+folio/kengine/small: 5 items -> 2026-11-06-folio-kengine-small-quick-first30/shard-1of6
+folio/kengine/small: 5 items -> 2026-11-06-folio-kengine-small-quick-first30/shard-5of6
+n=5 headline=0.200 exact=0.200 abstention=0.800 answered_acc=1.000 statuses={'answered': 1, 'blocked': 4} mean_wall_s=440.6
++ for p in $pids
++ wait 108925
+n=5 headline=0.400 exact=0.400 abstention=0.600 answered_acc=1.000 statuses={'blocked': 2, 'partial': 1, 'answered': 2} mean_wall_s=815.9
++ /root/.local/bin/uv run --project /root/kengine kengine eval-merge 2026-11-06-folio-kengine-small-quick-first30
+n=30 headline=0.167 exact=0.167 abstention=0.833 answered_acc=1.000 statuses={'answered': 5, 'blocked': 22, 'partial': 3} mean_wall_s=1034.4
++ for d in 2026-*
++ redo=
++ for s in $d/shard-*
++ f=2026-11-06-gsm8k-kengine-smoke-quick/shard-1of2/items.jsonl
++ grep -q '"status":"error"' 2026-11-06-gsm8k-kengine-smoke-quick/shard-1of2/items.jsonl
++ for s in $d/shard-*
++ f=2026-11-06-gsm8k-kengine-smoke-quick/shard-2of2/items.jsonl
++ grep -q '"status":"error"' 2026-11-06-gsm8k-kengine-smoke-quick/shard-2of2/items.jsonl
+++ echo 2026-11-06-gsm8k-kengine-smoke-quick
+++ sed -E 's/^2026-11-06-([a-z0-9]+)-kengine-.*/\1/'
++ suite=gsm8k
++ pids=
++ /root/.local/bin/uv run --project /root/kengine kengine eval-merge 2026-11-06-gsm8k-kengine-smoke-quick
+n=10 headline=0.800 exact=0.800 abstention=0.200 answered_acc=1.000 statuses={'answered': 8, 'blocked': 2} mean_wall_s=277.8
++ echo 'RETUNE-DONE fail=0'
+RETUNE-DONE fail=0
