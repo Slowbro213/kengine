@@ -308,12 +308,17 @@ def finetune_data(
 @app.command("finetune-chains")
 def finetune_chains(
     out: Annotated[Path, typer.Option()] = Path("finetune/data-chains"),
+    uncertain_percent: Annotated[
+        int, typer.Option(min=0, max=100, help="share of the Uncertain train rows to keep")
+    ] = 100,
 ) -> None:
     """Write THINK and extract training pairs: worked solutions to FOLIO-train rows, built
     from the expert logic and checked by the logic checker."""
     cfg, _ = _config()
     rows = suites.load_rows("tasksource/folio", None, "train")
-    pairs, dropped = build_chain_pairs(rows, cfg.context.step_prompt_tokens)
+    pairs, dropped = build_chain_pairs(
+        rows, cfg.context.step_prompt_tokens, uncertain_percent=uncertain_percent
+    )
     out.mkdir(parents=True, exist_ok=True)
     for split in ("train", "dev"):
         lines = [p.model_dump_json() + "\n" for p in pairs if p.split == split]

@@ -326,10 +326,15 @@ def row_pairs(
 
 
 def build_chain_pairs(
-    rows: Iterable[Mapping[str, object]], budget: int, dev_percent: int = 10
+    rows: Iterable[Mapping[str, object]],
+    budget: int,
+    dev_percent: int = 10,
+    uncertain_percent: int = 100,
 ) -> tuple[list[ChainPair], Counter[str]]:
     """The pairs for every row that converts and has a chain, and how many rows were dropped
-    for each reason. Stories split into train and dev as for FORMALIZE (`data.dev_story`)."""
+    for each reason. Stories split into train and dev as for FORMALIZE (`data.dev_story`).
+    Only about `uncertain_percent` of the train rows labelled Uncertain are kept, picked by a
+    hash of the row; dev keeps them all."""
     pairs: list[ChainPair] = []
     dropped: Counter[str] = Counter()
     for i, row in enumerate(rows):
@@ -339,6 +344,13 @@ def build_chain_pairs(
             dropped["doesn't convert"] += 1
             continue
         split = "dev" if dev_story(str(row["story_id"]), dev_percent) else "train"
+        if (
+            split == "train"
+            and row["label"] == "Uncertain"
+            and not dev_story(f"uncertain:{row['example_id']}", uncertain_percent)
+        ):
+            dropped["Uncertain: thinned out"] += 1
+            continue
         try:
             pairs += row_pairs(row, i, forms, split, budget)
         except NoChain as e:

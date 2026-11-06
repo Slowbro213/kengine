@@ -9,7 +9,7 @@ answer's tokens count toward the loss.
 
 The adapter with the lowest dev loss is kept. Training stops early at --max-hours.
 
-    python train.py --base BASE_DIR --data finetune/data --out finetune/out
+    python train.py --base BASE_DIR --data finetune/data finetune/data-chains --out finetune/out
 """
 
 from __future__ import annotations
@@ -99,7 +99,9 @@ class StopAfter(TrainerCallback):
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", type=Path, required=True, help="HF model directory")
-    ap.add_argument("--data", type=Path, required=True, help="train.jsonl and dev.jsonl")
+    ap.add_argument(
+        "--data", type=Path, nargs="+", required=True, help="dirs with train.jsonl and dev.jsonl"
+    )
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--epochs", type=float, default=3)
     ap.add_argument("--max-steps", type=int, default=-1, help="for a quick test")
@@ -113,8 +115,8 @@ def main() -> None:
     args = ap.parse_args()
 
     tok = AutoTokenizer.from_pretrained(args.base)
-    train = load(args.data / "train.jsonl", tok, args.max_len)
-    dev = load(args.data / "dev.jsonl", tok, args.max_len)
+    train = [x for d in args.data for x in load(d / "train.jsonl", tok, args.max_len)]
+    dev = [x for d in args.data for x in load(d / "dev.jsonl", tok, args.max_len)]
     print(f"train {len(train)} pairs, dev {len(dev)}", flush=True)
 
     quant = None

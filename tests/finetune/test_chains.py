@@ -106,3 +106,22 @@ def test_build_chain_pairs_counts_what_it_drops():
     pairs, dropped = build_chain_pairs(rows, budget=14000)
     assert [(p.item_id, p.role) for p in pairs] == [("folio-0", "think"), ("folio-0", "extract")]
     assert dropped == {"doesn't convert": 1}
+
+
+def test_uncertain_train_rows_can_be_thinned_out():
+    rows = [
+        {
+            "story_id": "7",
+            "example_id": str(i),
+            "premises": "Rex is a dog.\nAll dogs are mammals.",
+            "premises-FOL": "Dog(rex)\n∀x (Dog(x) → Mammal(x))",
+            "conclusion": "Rex barks.",
+            "conclusion-FOL": "Barks(rex)",
+            "label": "Uncertain",
+        }
+        for i in range(40)
+    ]
+    pairs, dropped = build_chain_pairs(rows, budget=14000, uncertain_percent=25)
+    kept = len(pairs) // 2
+    assert 0 < kept < 20 and dropped == {"Uncertain: thinned out": 40 - kept}
+    assert build_chain_pairs(rows, budget=14000, uncertain_percent=0)[0] == []
