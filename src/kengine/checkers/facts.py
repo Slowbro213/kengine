@@ -9,6 +9,8 @@ something the fact names. Both backing and contradiction is `conflicting`, and n
 
 from __future__ import annotations
 
+import re
+
 from kengine.beliefs.status import Status
 from kengine.checkers.base import BeliefView, CheckerKind, Outcome, Verdict
 from kengine.claims.schema import Claim, ClaimType
@@ -44,7 +46,7 @@ class FactChecker:
 
     def check(self, claim: Claim, view: BeliefView) -> Verdict:
         verdict = self._judge(claim)
-        if verdict.outcome == Outcome.UNKNOWN and not verdict.evidence and self._web:
+        if verdict.outcome == Outcome.UNKNOWN and not verdict.evidence and self._web is not None:
             self._corpus.add(web_passages(self._web.search(claim.text)))
             verdict = self._judge(claim)
         return verdict
@@ -106,8 +108,12 @@ class FactChecker:
 
 
 def _names(claim: Claim, p: Passage) -> bool:
-    title = bare_title(p.title).lower()
-    return bool(title) and title in claim.text.lower()
+    if p.source:  # a web title is untrusted: only the task's documents may contradict
+        return False
+    title = bare_title(p.title)
+    return (
+        bool(title) and re.search(rf"\b{re.escape(title)}\b", claim.text, re.IGNORECASE) is not None
+    )
 
 
 def _pct(s: NLIScores) -> str:

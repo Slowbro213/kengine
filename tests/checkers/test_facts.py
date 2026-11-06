@@ -9,6 +9,7 @@ from kengine.config import FactsConfig
 from kengine.retrieval.fake import FakeEmbedder, FakeEntailment
 from kengine.retrieval.index import Corpus
 from kengine.retrieval.models import NLIScores
+from kengine.retrieval.web import WebResult, WebSearch
 
 DOCS = [
     "Ann Lee: Ann Lee is a painter. She was born in Paris in 1990.",
@@ -39,10 +40,24 @@ class NoBeliefs:
         return list(ids)
 
 
-def checker(*rules: tuple[str, str, NLIScores]) -> FactChecker:
+def checker(
+    *rules: tuple[str, str, NLIScores],
+    docs: list[str] = DOCS,
+    web: WebSearch | None = None,
+) -> FactChecker:
     return FactChecker(
-        Corpus.from_documents(DOCS, FakeEmbedder()), FakeEntailment(rules), FactsConfig()
+        Corpus.from_documents(docs, FakeEmbedder()), FakeEntailment(rules), FactsConfig(), web
     )
+
+
+class FakeWeb:
+    def __init__(self, results: list[WebResult]) -> None:
+        self.results = results
+        self.queries: list[str] = []
+
+    def search(self, query: str) -> list[WebResult]:
+        self.queries.append(query)
+        return self.results
 
 
 def test_a_fact_a_passage_entails_is_verified_with_the_passage_cited():
@@ -86,3 +101,50 @@ def test_it_applies_to_facts_only():
     c = checker()
     assert c.applies_to(fact("x"))
     assert not c.applies_to(fact("x").model_copy(update={"type": ClaimType.DEFINITION}))
+
+
+def test_a_short_title_does_not_match_inside_a_longer_name():
+    text = "Bob Smith was born in 1970."
+    v = checker(("Oslo in 1960", text, AGAINST), docs=["Bo: Bo was born in Oslo in 1960."]).check(
+        fact(text), NoBeliefs()
+    )
+    assert (v.outcome, v.status) == (Outcome.UNKNOWN, None)
+    assert "no document passage states this" in v.explanation
+
+
+LYON = WebResult("https://x.org/a", "Ann Lee", "Ann Lee was born in Lyon.", "2026-01-01T00:00:00Z")
+
+
+def test_a_web_result_can_back_a_fact_and_is_cited_as_untrusted():
+    text = "Ann Lee was born in Lyon."
+    web = FakeWeb([LYON])
+    v = checker(("born in Lyon", text, SURE), web=web).check(fact(text), NoBeliefs())
+    assert (v.outcome, v.status) == (Outcome.PASS, Status.VERIFIED)
+    assert v.evidence[0].startswith(
+        "web https://x.org/a (fetched 2026-01-01T00:00:00Z), untrusted: "
+    )
+    assert web.queries == [text]
+
+
+def test_a_web_result_cannot_contradict_whatever_its_title():
+    text = "Cy Dun was born in 1970."
+    hit = WebResult("https://x.org/c", "Cy Dun", "Cy Dun was born in 1960.", "t")
+    v = checker(("in 1960", text, AGAINST), web=FakeWeb([hit])).check(fact(text), NoBeliefs())
+    assert (v.outcome, v.status) == (Outcome.UNKNOWN, None)
+
+
+def test_an_empty_web_search_leaves_it_insufficient():
+    text = "Ann Lee was born in Lyon."
+    web = FakeWeb([])
+    v = checker(web=web).check(fact(text), NoBeliefs())
+    assert (v.outcome, v.status) == (Outcome.UNKNOWN, None)
+    assert "no document passage states this" in v.explanation
+    assert web.queries == [text]
+
+
+def test_web_is_not_queried_when_the_documents_decide():
+    text = "Ann Lee was born in Paris."
+    web = FakeWeb([LYON])
+    v = checker(("born in Paris", text, SURE), web=web).check(fact(text), NoBeliefs())
+    assert v.status == Status.VERIFIED
+    assert web.queries == []
