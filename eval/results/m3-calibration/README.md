@@ -48,3 +48,9 @@ None that is clearly wrong. I read every row against that question's documents.
 
 None. No row was clearly wrong at the defaults, so `FactsConfig` and `kengine.example.toml`
 are unchanged.
+
+## Limits
+
+The replay had no contradictions, so it says nothing about the contradiction threshold
+(`contradict`, 0.9). A few claims appear twice in the logs (the Column of Saint Zanobi
+question), which counts them twice. Checkpoint D's live runs test both checkers further.
