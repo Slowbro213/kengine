@@ -38,6 +38,8 @@ What the GPU machine runs and commits (spec §3). Everything here was run on the
 
    For an unmodified comparison model, use the same quant from `bartowski/Qwen_Qwen3.5-9B-GGUF` or `unsloth/Qwen3.5-9B-GGUF`.
 
+   **Since 2026-11-06 the default is our translation-tuned model**, `models/ours-9B-ft1-Q4_K_M.gguf` (the stage-1 fine-tune of this base, see `docs/superpowers/plans/2026-11-05-translation-finetune.md`). It isn't downloadable: rebuild it from the adapter with `finetune/merge.py`, `convert_hf_to_gguf.py` and `llama-quantize Q4_K_M`. Use it in place of the GGUF in step 4; the server flags are the same. Evals from M3 on use it.
+
 4. Start the server:
 
    ```bash
