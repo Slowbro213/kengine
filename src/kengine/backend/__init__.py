@@ -1,7 +1,13 @@
 """Model backends."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from kengine.backend.types import ModelBackend
-from kengine.config import BackendConfig
+
+if TYPE_CHECKING:
+    from kengine.config import BackendConfig
 
 
 def make_backend(config: BackendConfig) -> ModelBackend:
