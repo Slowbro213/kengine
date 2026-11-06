@@ -124,6 +124,26 @@ On the 15 folio items the untuned pod run finished, the tuned model got 2 right,
 1. A free change at home: let a definite True or False from the translation alone count as an answer. Only accept it when a second check agrees, either the model's own answer or a second translation. Test it first on items outside the eval set: the 43 held-back stories plus a fresh FOLIO slice. Keep it only if it gives no wrong answers there.
 2. Stage 2: train the reasoning step. The data would be checker-valid step chains, generated from FOLIO-train's expert logic. Build and test it on the 0.8B at home first, then use a short pod (about $2).
 
+### The shortcut, tested (2026-11-06)
+
+Next step 1 is built, behind `logic.answer_from_givens` (off by default). When the gate blocks a True or False answer, the shortcut passes the answer anyway if the givens' translation alone shows it. It never changes the model's answer, and never passes Uncertain: a lost link in the translation also looks like Uncertain.
+
+- **Replayed on the saved runs**, the tuned model goes from 5 right to 10 of 30, with no wrong answer. With the i1 model the shortcut lets one wrong answer through (1271, in two runs).
+- **The safety test.** A shortcut answer can only be wrong if the translation alone gives a definite wrong answer. So `kengine probe-formal --split train-dev` counts those on the 93 puzzles of the held-back FOLIO-train stories. No eval uses those stories, and neither did training.
+
+  | Model | True/False right | True/False wrong | Uncertain right | Uncertain wrong | No answer |
+  |---|---|---|---|---|---|
+  | 9B, the i1 file | 20 | **6** | 26 | 26 | 15 |
+  | 9B, tuned | 29 | **3** | 33 | 26 | 2 |
+
+- **The bar was no wrong answers, so the shortcut stays off.** All three of the tuned model's misses come from one story, and on a close look they're problems with FOLIO's answer key:
+  - In 1107 the key is wrong. "If Erica likes puzzles and plays a lot of chess, then she plays a lot of chess or is creative" can't be false, but the key says False.
+  - In 1102 and 1106 the key reads "either … or" as "one but not both", where the model reads "one or both".
+
+  FOLIO grades by its key, though, and its validation split has the same "either … or" convention. So turned on, the shortcut would sometimes cost a wrong answer. It's worth turning on only if the owner accepts that.
+
+The held-back stories also picked the tuned model's best checkpoint (by the loss on their 43 converted pairs), so they're slightly kinder to it than truly fresh puzzles. Results are in `eval/results/answer-from-givens/`.
+
 **Lessons for the next pod:**
 
 - The CPU quota is about 7.6 cores, not the 96 `nproc` reports.
