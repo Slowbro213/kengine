@@ -2,8 +2,10 @@ import json
 from datetime import date
 from pathlib import Path
 
+import pytest
+
 from kengine.backend.types import BackendError
-from kengine.eval.runner import rescore, results_dir_name, run_eval
+from kengine.eval.runner import merge_shards, rescore, results_dir_name, run_eval, shard_dir_name
 from kengine.eval.suites import SUITES
 from kengine.eval.types import EvalItem, SolveResult, SolveStatus
 
@@ -145,3 +147,38 @@ def test_rescore_fills_credit_for_old_results(tmp_path: Path) -> None:
     assert m.solver == "stub" and m.exact_accuracy == 0.5
     assert [x["credit"] for x in read_items(tmp_path)][1] == 1.0
     assert (tmp_path / "failures_sample.jsonl").read_text() == sample
+
+
+def test_merged_shards_match_an_unsharded_run(tmp_path: Path) -> None:
+    items = [item(i) for i in range(7)]
+    results: dict[str, SolveResult | Exception] = {
+        i.id: result("5" if n % 3 else "0") for n, i in enumerate(items)
+    }
+    whole = run_eval(SPEC, items, StubSolver(results), tmp_path / "whole", {}, 2, seed=3)
+    merged_dir = tmp_path / "merged"
+    for k in range(1, 4):
+        part = items[k - 1 :: 3]
+        config = {"solver": "stub", "n_items": len(part), "shard": f"{k}/3"}
+        shard = merged_dir / shard_dir_name(k, 3)
+        run_eval(SPEC, part, StubSolver(results), shard, config, len(part), seed=3)
+    merged = merge_shards(SPEC, merged_dir, failure_sample_size=2, seed=3)
+    assert merged == whole
+    for name in ["items.jsonl", "failures_sample.jsonl", "metrics.json"]:
+        assert (merged_dir / name).read_text() == (tmp_path / "whole" / name).read_text()
+    config = json.loads((merged_dir / "config.json").read_text())
+    assert config == {"solver": "stub", "n_items": 7, "shards": 3}
+
+
+def test_merge_refuses_missing_or_unfinished_shards(tmp_path: Path) -> None:
+    items = [item(i) for i in range(4)]
+    results: dict[str, SolveResult | Exception] = {i.id: result("5") for i in items}
+    with pytest.raises(ValueError, match="no shard"):
+        merge_shards(SPEC, tmp_path)
+    one = tmp_path / shard_dir_name(1, 2)
+    run_eval(SPEC, items[0::2], StubSolver(results), one, {"solver": "s", "n_items": 2})
+    with pytest.raises(ValueError, match="shard-2of2"):
+        merge_shards(SPEC, tmp_path)
+    two = tmp_path / shard_dir_name(2, 2)
+    run_eval(SPEC, items[1:2], StubSolver(results), two, {"solver": "s", "n_items": 2})
+    with pytest.raises(ValueError, match="shard-2of2 is unfinished: 1 of 2"):
+        merge_shards(SPEC, tmp_path)

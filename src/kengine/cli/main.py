@@ -26,7 +26,7 @@ from kengine.eval.baseline import BaselineSolver
 from kengine.eval.compare import compare_runs
 from kengine.eval.kengine_solver import KengineSolver
 from kengine.eval.probe_formal import run_probe
-from kengine.eval.runner import rescore, results_dir_name, run_eval
+from kengine.eval.runner import merge_shards, rescore, results_dir_name, run_eval, shard_dir_name
 from kengine.eval.taxonomy import summarize_taxonomy
 from kengine.eval.types import RunMetrics, Size, Solver, SuiteName
 from kengine.finetune.data import build_pairs, distill_gsm8k
@@ -82,9 +82,14 @@ def eval_cmd(
     seed: Annotated[int, typer.Option()] = 0,
     out: Annotated[Path, typer.Option(help="Parent directory for results.")] = Path("eval/results"),
     limit: Annotated[int | None, typer.Option(min=1, help="Only the first N items.")] = None,
+    shard: Annotated[
+        str | None,
+        typer.Option(help="K/N: run items K, K+N, ... into a shard-KofN subdir; see eval-merge."),
+    ] = None,
 ) -> None:
     """Run a suite; results go to OUT/<date>-<suite>-<solver>-<size>-<profile>[-firstN]."""
     cfg, _ = _config()
+    k, n = _parse_shard(shard) if shard is not None else (1, 1)
     profile_name = "none"
     if solver == "kengine":
         profile_name = profile or cfg.default_profile
@@ -95,6 +100,8 @@ def eval_cmd(
     out_dir = out / results_dir_name(
         datetime.date.today(), suite, solver, size, profile_name, limit
     )
+    if shard is not None:
+        out_dir = out_dir / shard_dir_name(k, n)
     backend = backend_factory(cfg.backend)
     budget = cfg.eval.token_budget_per_task
     the_solver: Solver
@@ -108,6 +115,7 @@ def eval_cmd(
     items = suites.load_items(suite, size, seed)
     if limit is not None:
         items = items[:limit]
+    items = items[k - 1 :: n]
     run_config: dict[str, object] = {
         "suite": suite,
         "solver": solver,
@@ -123,8 +131,38 @@ def eval_cmd(
         "roles": cfg.roles.model_dump(mode="json"),
         "token_budget_per_task": cfg.eval.token_budget_per_task,
     }
+    if shard is not None:
+        run_config["shard"] = f"{k}/{n}"
     typer.echo(f"{suite}/{solver}/{size}: {len(items)} items -> {out_dir}")
-    m = run_eval(suites.SUITES[suite], items, the_solver, out_dir, run_config, seed=seed)
+    # A shard keeps every failure, so eval-merge can draw the same sample an unsharded run would.
+    sample = len(items) if shard is not None else 25
+    m = run_eval(suites.SUITES[suite], items, the_solver, out_dir, run_config, sample, seed=seed)
+    typer.echo(_metrics_line(m))
+
+
+def _parse_shard(shard: str) -> tuple[int, int]:
+    k, _, n = shard.partition("/")
+    if not (k.isdigit() and n.isdigit() and 1 <= int(k) <= int(n)):
+        typer.echo(f"--shard must be K/N with 1 <= K <= N, got {shard!r}", err=True)
+        raise typer.Exit(2)
+    return int(k), int(n)
+
+
+@app.command("eval-merge")
+def eval_merge(
+    results_dir: Annotated[Path, typer.Argument(help="A results dir holding shard-KofN runs")],
+) -> None:
+    """Join RESULTS_DIR's finished shards into one run in RESULTS_DIR."""
+    first = min(results_dir.glob("shard-*of*"), default=None)
+    if first is None:
+        typer.echo(f"no shard-KofN dirs in {results_dir}", err=True)
+        raise typer.Exit(2)
+    config = json.loads((first / "config.json").read_text(encoding="utf-8"))
+    try:
+        m = merge_shards(suites.SUITES[config["suite"]], results_dir, seed=int(config["seed"]))
+    except ValueError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
     typer.echo(_metrics_line(m))
 
 

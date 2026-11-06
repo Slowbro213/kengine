@@ -143,8 +143,55 @@ def run_eval(
             done.add(item.id)
 
     lines = _read_lines(items_path)
-    _write_failures(out_dir, lines, items, failure_sample_size, seed)
+    questions = {i.id: i.question for i in items}
+    _write_failures(out_dir, lines, questions, failure_sample_size, seed)
     return _write_metrics(out_dir, spec.name, solver.name, lines)
+
+
+def shard_dir_name(k: int, n: int) -> str:
+    return f"shard-{k}of{n}"
+
+
+def merge_shards(
+    spec: SuiteSpec, out_dir: Path, failure_sample_size: int = 25, seed: int = 0
+) -> RunMetrics:
+    """Join the finished shard-KofN runs under OUT_DIR into one run, written as an unsharded
+    run would have written it. Shard K holds items K-1, K-1+N, ... of the full list, and must
+    keep every failure in its failures_sample.jsonl, so the merged sample is the same."""
+    found = set(out_dir.glob("shard-*of*"))
+    if not found:
+        raise ValueError(f"no shard-KofN dirs in {out_dir}")
+    n = int(min(found).name.rsplit("of", 1)[1])
+    dirs = [out_dir / shard_dir_name(k, n) for k in range(1, n + 1)]
+    if found != set(dirs):
+        raise ValueError(f"expected exactly {', '.join(d.name for d in dirs)} in {out_dir}")
+    configs: list[dict[str, object]] = []
+    shards: list[list[ItemLine]] = []
+    for d in dirs:
+        config = json.loads((d / "config.json").read_text(encoding="utf-8"))
+        lines = _read_lines(d / "items.jsonl")
+        if len(lines) != config["n_items"]:
+            raise ValueError(f"{d.name} is unfinished: {len(lines)} of {config['n_items']} items")
+        configs.append(config)
+        shards.append(lines)
+    longest = max(len(s) for s in shards)
+    lines = [s[j] for j in range(longest) for s in shards if j < len(s)]
+    run_config = {k: v for k, v in configs[0].items() if k != "shard"}
+    run_config["n_items"] = len(lines)
+    run_config["shards"] = n
+    (out_dir / "config.json").write_text(
+        json.dumps(run_config, indent=2, default=str) + "\n", encoding="utf-8"
+    )
+    (out_dir / "items.jsonl").write_text(
+        "".join(x.model_dump_json() + "\n" for x in lines), "utf-8"
+    )
+    questions: dict[str, str | None] = {}
+    for d in dirs:
+        for raw in (d / "failures_sample.jsonl").read_text(encoding="utf-8").splitlines():
+            row = json.loads(raw)
+            questions[row["item_id"]] = row["question"]
+    _write_failures(out_dir, lines, questions, failure_sample_size, seed)
+    return _write_metrics(out_dir, spec.name, str(run_config["solver"]), lines)
 
 
 def _write_metrics(out_dir: Path, suite: str, solver: str, lines: Sequence[ItemLine]) -> RunMetrics:
@@ -174,11 +221,10 @@ def _score_fields(spec: SuiteSpec, line: ItemLine) -> dict[str, object]:
 def _write_failures(
     out_dir: Path,
     lines: Sequence[ItemLine],
-    items: Sequence[EvalItem],
+    questions: Mapping[str, str | None],
     size: int,
     seed: int,
 ) -> None:
-    questions = {i.id: i.question for i in items}
     wrong = [x for x in lines if _credit(x) < 1.0]
     chosen = set(x.item_id for x in random.Random(seed).sample(wrong, min(size, len(wrong))))
     with (out_dir / "failures_sample.jsonl").open("w", encoding="utf-8") as f:

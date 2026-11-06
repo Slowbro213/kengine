@@ -201,6 +201,30 @@ def test_cli_eval_limit(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None
     assert json.loads((d / "config.json").read_text())["limit"] == 1
 
 
+def test_cli_eval_shards_and_merge(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    replies = [ScriptedReply(content="Final answer: 1234")] * 2
+    use_backend(monkeypatch, ScriptedBackend(replies))
+    monkeypatch.setattr(suites, "load_items", gsm_items)
+    out = tmp_path / "o"
+    for shard in ["1/2", "2/2"]:
+        r = runner.invoke(main.app, ["eval", "gsm8k", "--shard", shard, "--out", str(out)])
+        assert r.exit_code == 0, r.output
+    (d,) = list(out.iterdir())
+    assert sorted(x.name for x in d.iterdir()) == ["shard-1of2", "shard-2of2"]
+    shard2 = [json.loads(x) for x in (d / "shard-2of2" / "items.jsonl").read_text().splitlines()]
+    assert [x["item_id"] for x in shard2] == ["gsm8k-1"]
+    r = runner.invoke(main.app, ["eval-merge", str(d)])
+    assert r.exit_code == 0, r.output
+    assert "n=2 headline=1.000" in r.output
+    assert json.loads((d / "config.json").read_text())["shards"] == 2
+
+
+def test_cli_eval_rejects_bad_shard(tmp_path: Path) -> None:
+    r = runner.invoke(main.app, ["eval", "gsm8k", "--shard", "3/2", "--out", str(tmp_path)])
+    assert r.exit_code == 2
+    assert "--shard must be K/N" in r.output
+
+
 def test_cli_eval_compare(tmp_path: Path) -> None:
     for name, correct in [("base", [True, False]), ("other", [True, True])]:
         d = tmp_path / name
