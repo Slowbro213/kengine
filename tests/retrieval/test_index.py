@@ -1,5 +1,10 @@
+from collections.abc import Sequence
+
+import pytest
+
 from kengine.retrieval.fake import FakeEmbedder
 from kengine.retrieval.index import Corpus
+from kengine.retrieval.models import Vectors
 from kengine.retrieval.passages import Passage, bare_title, split_document
 
 DOCS = [
@@ -51,3 +56,24 @@ def test_added_passages_are_searchable():
     corpus = Corpus(FakeEmbedder())
     corpus.add([Passage(0, "Web", "Web: Bo was born in Oslo.", "https://x (fetched t)")])
     assert corpus.search("Bo born Oslo")[0].source == "https://x (fetched t)"
+
+
+def test_adding_twice_keeps_row_ids_and_vectors_aligned():
+    corpus = Corpus(FakeEmbedder())
+    corpus.add([Passage(0, "Web", "Web: Bo was born in Oslo.")])
+    corpus.add([Passage(0, "Web", "Web: Ida paints ferries in Bergen.")])
+    assert len(corpus) == 2
+    assert corpus.search("Ida paints ferries")[0].text == "Web: Ida paints ferries in Bergen."
+
+
+class Boom:
+    def embed(self, texts: Sequence[str], query: bool = False) -> Vectors:
+        raise RuntimeError("embedder failed")
+
+
+def test_an_embedder_that_raises_leaves_the_corpus_unchanged():
+    corpus = Corpus(Boom())
+    with pytest.raises(RuntimeError):
+        corpus.add([Passage(0, "Web", "Web: Bo was born in Oslo.")])
+    assert len(corpus) == 0
+    assert corpus.search("anything") == []

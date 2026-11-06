@@ -37,13 +37,13 @@ class Corpus:
     def add(self, passages: Sequence[Passage]) -> None:
         if not passages:
             return
+        new = self._embedder.embed([p.text for p in passages])
         start = len(self._passages)
         self._passages += passages
         self._db.executemany(
             "INSERT INTO p(rowid, t) VALUES (?, ?)",
             [(start + i, p.text) for i, p in enumerate(passages)],
         )
-        new = self._embedder.embed([p.text for p in passages])
         self._vectors = new if start == 0 else np.vstack([self._vectors, new])
 
     def search(self, query: str, k: int = 8) -> list[Passage]:
