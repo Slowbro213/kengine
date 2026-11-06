@@ -257,17 +257,19 @@ def run(
     ] = None,
     doc: Annotated[
         list[Path] | None,
-        typer.Option(help="A document to check facts against; repeatable."),
+        typer.Option(
+            exists=True, dir_okay=False, help="A document to check facts against; repeatable."
+        ),
     ] = None,
 ) -> None:
     """Solve TASK with the agent loop. Exits 0 when answered, 3 otherwise."""
     cfg, _ = _config()
     profile_name = profile or cfg.default_profile
     _profile_or_exit(profile_name)
-    documents = [f"{p.name}: {p.read_text()}" for p in doc or []]
+    documents = [f"{p.name}: {p.read_text(encoding='utf-8')}" for p in doc or []]
     web = SearxngSearch(cfg.facts.searxng_url) if cfg.facts.searxng_url else None
     checkers = task_checkers(
-        documents, has_givens=True, models=_models(cfg), facts=cfg.facts, web=web
+        documents, has_givens=not documents, models=_models(cfg), facts=cfg.facts, web=web
     )
     session = Session.create(cfg.data_dir / "sessions")
     try:

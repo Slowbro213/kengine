@@ -324,8 +324,13 @@ def test_cli_run_doc_passes_the_files_as_documents(
         return run(self, task)
 
     monkeypatch.setattr(main.Agent, "run", record)
-    use_backend(monkeypatch, ScriptedBackend([FORMALIZE_NONE, think_reply()] * 2))
-    runner.invoke(main.app, ["run", "Who directed Heat?", "--doc", "heat.txt", "--max-steps", "1"])
+    assumption = {"ref": "c1", "type": "assumption", "text": "a pen costs $2"}
+    reply = extract_reply([assumption, comp("c2", "12*2", "24", ["c1"])], "24", ["c2"])
+    use_backend(monkeypatch, ScriptedBackend([FORMALIZE_NONE, think_reply(), reply]))
+    r = runner.invoke(
+        main.app, ["run", "Who directed Heat?", "--doc", "heat.txt", "--profile", "quick"]
+    )
+    assert r.exit_code == 0, r.output
     assert [t.documents for t in tasks] == [["heat.txt: Heat was directed by Michael Mann."]]
 
 

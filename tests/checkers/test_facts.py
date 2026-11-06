@@ -115,11 +115,12 @@ def test_a_short_title_does_not_match_inside_a_longer_name():
 LYON = WebResult("https://x.org/a", "Ann Lee", "Ann Lee was born in Lyon.", "2026-01-01T00:00:00Z")
 
 
-def test_a_web_result_can_back_a_fact_and_is_cited_as_untrusted():
+def test_a_web_result_backs_a_fact_only_to_supported_and_is_cited_as_untrusted():
     text = "Ann Lee was born in Lyon."
     web = FakeWeb([LYON])
     v = checker(("born in Lyon", text, SURE), web=web).check(fact(text), NoBeliefs())
-    assert (v.outcome, v.status) == (Outcome.PASS, Status.VERIFIED)
+    assert (v.outcome, v.status) == (Outcome.PASS, Status.SUPPORTED)
+    assert "from the web" in v.explanation
     assert v.evidence[0].startswith(
         "web https://x.org/a (fetched 2026-01-01T00:00:00Z), untrusted: "
     )
@@ -148,3 +149,11 @@ def test_web_is_not_queried_when_the_documents_decide():
     v = checker(("born in Paris", text, SURE), web=web).check(fact(text), NoBeliefs())
     assert v.status == Status.VERIFIED
     assert web.queries == []
+
+
+def test_a_document_reference_is_not_part_of_what_is_checked():
+    text = "Ann Lee was born in Paris."
+    v = checker(("born in Paris", text, SURE)).check(
+        fact(f"{text[:-1]} (document 3)."), NoBeliefs()
+    )
+    assert (v.outcome, v.status) == (Outcome.PASS, Status.VERIFIED)

@@ -11,6 +11,7 @@ from kengine.checkers.base import BeliefView, CheckerKind, Outcome, Verdict
 from kengine.claims.schema import Claim, ClaimType
 from kengine.config import FactsConfig
 from kengine.retrieval.models import EntailmentModel
+from kengine.retrieval.passages import claim_text
 
 
 class InferenceEntailmentChecker:
@@ -25,8 +26,8 @@ class InferenceEntailmentChecker:
 
     def check(self, claim: Claim, view: BeliefView) -> Verdict:
         cited = [p for p in claim.premises if view.exists(p)]
-        premise = " ".join(view.get(p).claim.text for p in cited)
-        (s,) = self._nli.score([(premise, claim.text)])
+        premise = " ".join(claim_text(view.get(p).claim.text) for p in cited)
+        (s,) = self._nli.score([(premise, claim_text(claim.text))])
         names = ", ".join(cited)
         if s.entail >= self._cfg.inference_entail:
             return self._verdict(

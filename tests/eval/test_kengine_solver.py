@@ -51,7 +51,7 @@ def test_solver_with_models_verifies_a_document_fact_and_answers(tmp_path: Path)
     sentence = "Heat was directed by Michael Mann."
     fact_text = "Heat was directed by Michael Mann (document 1)"
     models = Models(
-        FakeEntailment([(sentence, fact_text, NLIScores(0.97, 0.02, 0.01))]), FakeEmbedder()
+        FakeEntailment([(sentence, sentence[:-1], NLIScores(0.97, 0.02, 0.01))]), FakeEmbedder()
     )
     claim = {"ref": "c1", "type": "fact", "text": fact_text}
     action = {"kind": "final_answer", "answer": "Michael Mann", "preconditions": ["c1"]}

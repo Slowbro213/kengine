@@ -17,7 +17,7 @@ from kengine.claims.schema import Claim, ClaimType
 from kengine.config import FactsConfig
 from kengine.retrieval.index import Corpus
 from kengine.retrieval.models import EntailmentModel, NLIScores
-from kengine.retrieval.passages import Passage, bare_title
+from kengine.retrieval.passages import Passage, bare_title, claim_text
 from kengine.retrieval.web import WebSearch, web_passages
 
 _SHOWN = 200
@@ -47,18 +47,17 @@ class FactChecker:
     def check(self, claim: Claim, view: BeliefView) -> Verdict:
         verdict = self._judge(claim)
         if verdict.outcome == Outcome.UNKNOWN and not verdict.evidence and self._web is not None:
-            self._corpus.add(web_passages(self._web.search(claim.text)))
+            self._corpus.add(web_passages(self._web.search(claim_text(claim.text))))
             verdict = self._judge(claim)
         return verdict
 
     def _judge(self, claim: Claim) -> Verdict:
-        passages = self._corpus.search(claim.text, self._cfg.top_k)
-        scores = self._nli.score([(p.text, claim.text) for p in passages])
+        text = claim_text(claim.text)
+        passages = self._corpus.search(text, self._cfg.top_k)
+        scores = self._nli.score([(p.text, text) for p in passages])
         scored = list(zip(passages, scores, strict=True))
         backing = max(scored, key=lambda ps: ps[1].entail, default=None)
-        against = [
-            p for p, s in scored if s.contradict >= self._cfg.contradict and _names(claim, p)
-        ]
+        against = [p for p, s in scored if s.contradict >= self._cfg.contradict and _names(text, p)]
         if backing is not None and backing[1].entail >= self._cfg.support_entail:
             p, s = backing
             if against:
@@ -68,6 +67,13 @@ class FactChecker:
                     f"the documents both back and contradict it: {cite(p)} / "
                     f"{cite(against[0])}. Say which one you rely on and why",
                     [cite(p), cite(against[0])],
+                )
+            if s.entail >= self._cfg.verify_entail and p.source:
+                return self._verdict(
+                    Outcome.PASS,
+                    Status.SUPPORTED,
+                    f"only a web result backs it (from the web, untrusted): {cite(p)}",
+                    [cite(p)],
                 )
             if s.entail >= self._cfg.verify_entail:
                 return self._verdict(
@@ -107,13 +113,11 @@ class FactChecker:
         )
 
 
-def _names(claim: Claim, p: Passage) -> bool:
+def _names(text: str, p: Passage) -> bool:
     if p.source:  # a web title is untrusted: only the task's documents may contradict
         return False
     title = bare_title(p.title)
-    return (
-        bool(title) and re.search(rf"\b{re.escape(title)}\b", claim.text, re.IGNORECASE) is not None
-    )
+    return bool(title) and re.search(rf"\b{re.escape(title)}\b", text, re.IGNORECASE) is not None
 
 
 def _pct(s: NLIScores) -> str:

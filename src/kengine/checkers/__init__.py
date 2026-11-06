@@ -44,5 +44,6 @@ def task_checkers(
     if documents or web is not None:
         corpus = Corpus.from_documents(documents, models.embedder)
         out.append(FactChecker(corpus, models.entailment, facts, web))
+    if documents:
         out.append(InferenceEntailmentChecker(models.entailment, facts))
     return out

@@ -84,3 +84,19 @@ def test_it_applies_to_informal_facts_and_definitions():
     c = ConsistencyChecker(FakeEntailment(), FakeEmbedder(), FactsConfig())
     assert c.applies_to(NEW.claim)
     assert not c.applies_to(NEW.claim.model_copy(update={"type": ClaimType.INFERENCE}))
+
+
+def test_a_document_reference_is_not_a_shared_name():
+    assert proper_names("Bo Chan was born in Oslo (Document 1)") == {"Bo", "Chan", "Oslo"}
+    a = rec("b1", "Bo Chan was born in Oslo (Document 1)", ClaimType.FACT, Status.VERIFIED)
+    b = rec("b2", "The tower is tall (Document 1)", ClaimType.FACT, Status.UNCHECKED)
+    nli = FakeEntailment(both_ways(a.claim.text, b.claim.text))
+    v = ConsistencyChecker(nli, FakeEmbedder(), FactsConfig()).check(b.claim, View([a, b]))
+    assert v.outcome == Outcome.PASS and nli.calls == []
+
+
+def test_supported_claims_are_not_compared():
+    old = OLD.model_copy(update={"status": Status.SUPPORTED})
+    nli = FakeEntailment(both_ways(OLD.claim.text, NEW.claim.text))
+    v = ConsistencyChecker(nli, FakeEmbedder(), FactsConfig()).check(NEW.claim, View([old, NEW]))
+    assert v.outcome == Outcome.PASS and nli.calls == []

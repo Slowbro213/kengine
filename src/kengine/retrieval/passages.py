@@ -10,6 +10,20 @@ from dataclasses import dataclass
 _SENTENCE_RE = re.compile(r"(?<=[.!?])\s+")
 _TITLE_RE = re.compile(r"^([^:\n]{1,120}): (.+)$", re.DOTALL)
 _PAREN_RE = re.compile(r"\s*\([^)]*\)\s*$")
+_REF_RE = re.compile(
+    r"\s*\((?:from\s+)?docs?(?:uments?)?\s+\d+(?:\s*(?:,|and|&)\s*\d+)*\)\s*(\.?)\s*$",
+    re.IGNORECASE,
+)
+
+
+def claim_text(text: str) -> str:
+    """The claim without a trailing document reference such as "(document 3)": the model
+    is asked to cite that way, but the reference isn't part of what the documents say."""
+    m = _REF_RE.search(text)
+    if m is None:
+        return text
+    head = text[: m.start()].rstrip()
+    return head + (m.group(1) if m.group(1) and not head.endswith(".") else "")
 
 
 @dataclass(frozen=True)

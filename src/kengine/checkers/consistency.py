@@ -16,6 +16,7 @@ from kengine.checkers.base import BeliefView, CheckerKind, Outcome, Verdict
 from kengine.claims.schema import Claim, ClaimType
 from kengine.config import FactsConfig
 from kengine.retrieval.models import Embedder, EntailmentModel
+from kengine.retrieval.passages import claim_text
 
 _NAME_RE = re.compile(r"\b[A-Z][A-Za-z'-]+\b")
 _NOT_NAMES = frozenset(
@@ -25,11 +26,11 @@ _NOT_NAMES = frozenset(
 )
 _APPLIES = (ClaimType.FACT, ClaimType.DEFINITION)
 _COMPARED = (ClaimType.FACT, ClaimType.DEFINITION, ClaimType.OBSERVATION)
-_CHECKED = (Status.VERIFIED, Status.SUPPORTED)
+_CHECKED = (Status.VERIFIED,)  # a weaker, possibly wrong, claim must not condemn a verified one
 
 
 def proper_names(text: str) -> set[str]:
-    return {w for w in _NAME_RE.findall(text) if w not in _NOT_NAMES}
+    return {w for w in _NAME_RE.findall(claim_text(text)) if w not in _NOT_NAMES}
 
 
 class ConsistencyChecker:
@@ -43,19 +44,23 @@ class ConsistencyChecker:
         return claim.type in _APPLIES and claim.formal is None
 
     def check(self, claim: Claim, view: BeliefView) -> Verdict:
-        names = proper_names(claim.text)
+        text = claim_text(claim.text)
+        names = proper_names(text)
         others = [
             r
             for r in view.all()
-            if r.claim.id != claim.id and _comparable(r) and names & proper_names(r.claim.text)
+            if r.claim.id != claim.id
+            and _comparable(r)
+            and names & proper_names(claim_text(r.claim.text))
         ]
         if others:
-            v = self._embedder.embed([claim.text, *(r.claim.text for r in others)])
+            v = self._embedder.embed([text, *(claim_text(r.claim.text) for r in others)])
             cos = v[1:] @ v[0]
             close = [float(c) >= self._cfg.consistency_cosine for c in cos]
             others = [r for r, ok in zip(others, close, strict=True) if ok]
         for r in others:
-            a, b = self._nli.score([(r.claim.text, claim.text), (claim.text, r.claim.text)])
+            other = claim_text(r.claim.text)
+            a, b = self._nli.score([(other, text), (text, other)])
             if min(a.contradict, b.contradict) >= self._cfg.contradict:
                 return self._verdict(
                     Outcome.FAIL,

@@ -69,3 +69,12 @@ def test_formal_or_premiseless_inferences_are_left_to_other_checkers():
     formal = Formal(statements=("born(mann, chicago)",))
     assert not c.applies_to(INF.model_copy(update={"formal": formal}))
     assert not c.applies_to(B1)
+
+
+def test_document_references_are_stripped_from_premises_and_hypothesis():
+    b1 = claim("b1", "Heat was directed by Michael Mann (document 3).", ClaimType.FACT)
+    b2 = claim("b2", "Michael Mann was born in Chicago. (from Document 4)", ClaimType.FACT)
+    inf = claim("b3", f"{INF.text} (doc 3)", ClaimType.INFERENCE, ("b1", "b2"))
+    nli = FakeEntailment([(JOINED, INF.text, SURE)])
+    v = InferenceEntailmentChecker(nli, FactsConfig()).check(inf, View([b1, b2, inf]))
+    assert (v.outcome, v.status) == (Outcome.PASS, Status.SUPPORTED)
