@@ -16,7 +16,7 @@ import typer
 from kengine.audit.session import Session
 from kengine.backend import make_backend
 from kengine.backend.types import ModelBackend
-from kengine.checkers import default_checkers
+from kengine.checkers import task_checkers
 from kengine.claims.formal import FormalSyntax
 from kengine.cli.doctor import nvidia_smi, render_report, run_doctor
 from kengine.config import BackendConfig, KengineConfig, default_config_paths, load_config
@@ -34,6 +34,8 @@ from kengine.finetune.data import build_pairs, dev_items, distill_gsm8k
 from kengine.loop.agent import Agent, Limits
 from kengine.loop.profiles import get_profile
 from kengine.loop.task import JUDGE_FORMAT, Task, judge_question, split_sentences
+from kengine.retrieval.models import Models, ModelsMissing, fetch_models, load_models
+from kengine.retrieval.web import SearxngSearch
 
 app = typer.Typer(no_args_is_help=True, help="kengine: check a small model's reasoning.")
 
@@ -44,6 +46,16 @@ backend_factory: Callable[[BackendConfig], ModelBackend] = make_backend
 def _config() -> tuple[KengineConfig, list[Path]]:
     paths = default_config_paths()
     return load_config(paths), paths
+
+
+def _models(cfg: KengineConfig) -> Models | None:
+    if not cfg.facts.enabled:
+        return None
+    try:
+        return load_models(cfg.models_dir)
+    except ModelsMissing as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(2) from exc
 
 
 def _git_commit() -> str | None:
@@ -72,6 +84,14 @@ def doctor(
     raise typer.Exit(0 if rep.ok else 1)
 
 
+@app.command("fetch-models")
+def fetch_models_cmd() -> None:
+    """Download the entailment and embedding models (about 870 MB) for the fact checks."""
+    cfg, _ = _config()
+    for path in fetch_models(cfg.models_dir):
+        typer.echo(str(path))
+
+
 @app.command("eval")
 def eval_cmd(
     suite: Annotated[SuiteName, typer.Argument(help="gsm8k | hotpotqa | folio")],
@@ -91,12 +111,20 @@ def eval_cmd(
         Literal["validation", "train-dev"],
         typer.Option(help="train-dev: FOLIO-train's held-back stories (folio only; ignores size)"),
     ] = "validation",
+    no_facts: Annotated[
+        bool,
+        typer.Option(
+            "--no-facts", help="Run without the M3 fact, consistency and inference checks."
+        ),
+    ] = False,
 ) -> None:
     """Run a suite; results go to OUT/<date>-<suite>-<solver>-<size>-<profile>[-firstN]."""
     if split == "train-dev" and suite != "folio":
         typer.echo("--split train-dev applies to folio only", err=True)
         raise typer.Exit(2)
     cfg, _ = _config()
+    if no_facts:
+        cfg = cfg.model_copy(update={"facts": cfg.facts.model_copy(update={"enabled": False})})
     k, n = _parse_shard(shard) if shard is not None else (1, 1)
     profile_name = "none"
     if solver == "kengine":
@@ -116,7 +144,12 @@ def eval_cmd(
     the_solver: Solver
     if solver == "kengine":
         the_solver = KengineSolver(
-            backend, cfg, get_profile(profile_name), out_dir / "sessions", budget
+            backend,
+            cfg,
+            get_profile(profile_name),
+            out_dir / "sessions",
+            budget,
+            models=_models(cfg),
         )
     else:
         the_solver = BaselineSolver(backend, cfg.roles.baseline, budget)
@@ -222,11 +255,20 @@ def run(
             "and check the answer against it."
         ),
     ] = None,
+    doc: Annotated[
+        list[Path] | None,
+        typer.Option(help="A document to check facts against; repeatable."),
+    ] = None,
 ) -> None:
     """Solve TASK with the agent loop. Exits 0 when answered, 3 otherwise."""
     cfg, _ = _config()
     profile_name = profile or cfg.default_profile
     _profile_or_exit(profile_name)
+    documents = [f"{p.name}: {p.read_text()}" for p in doc or []]
+    web = SearxngSearch(cfg.facts.searxng_url) if cfg.facts.searxng_url else None
+    checkers = task_checkers(
+        documents, has_givens=True, models=_models(cfg), facts=cfg.facts, web=web
+    )
     session = Session.create(cfg.data_dir / "sessions")
     try:
         agent = Agent(
@@ -234,7 +276,7 @@ def run(
             roles=cfg.roles,
             profile=get_profile(profile_name),
             context_budget=cfg.context.step_prompt_tokens,
-            checkers=default_checkers(),
+            checkers=checkers,
             session=session,
             limits=Limits(
                 max_steps=max_steps, max_completion_tokens=max_tokens, max_wall_s=max_wall_s
@@ -245,12 +287,13 @@ def run(
         )
         givens = split_sentences(task)
         if conclusion is None:
-            r = agent.run(Task(goal=task, givens=givens))
+            r = agent.run(Task(goal=task, documents=documents, givens=givens))
         else:
             r = agent.run(
                 Task(
                     goal=judge_question(givens, conclusion),
                     answer_format=JUDGE_FORMAT,
+                    documents=documents,
                     givens=givens,
                     conclusion=conclusion,
                 )

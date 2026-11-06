@@ -7,13 +7,14 @@ from pathlib import Path
 from kengine.audit.events import FeedbackEvent, ThinkEvent
 from kengine.audit.session import Session
 from kengine.backend.types import ModelBackend
-from kengine.checkers import default_checkers
+from kengine.checkers import task_checkers
 from kengine.config import KengineConfig
 from kengine.eval.baseline import EXCERPT_CHARS
 from kengine.eval.types import EvalItem, SolveResult, SolveStatus
 from kengine.loop.agent import Agent, Limits, RunStatus
 from kengine.loop.profiles import Profile
 from kengine.loop.task import Task
+from kengine.retrieval.models import Models
 
 STATUS_MAP: dict[RunStatus, SolveStatus] = {
     "answered": "answered",
@@ -34,12 +35,14 @@ class KengineSolver:
         profile: Profile,
         sessions_root: Path,
         token_budget: int,
+        models: Models | None = None,
     ) -> None:
         self._backend = backend
         self._config = config
         self._profile = profile
         self._sessions_root = sessions_root
         self._token_budget = token_budget
+        self._models = models
 
     def solve(self, item: EvalItem) -> SolveResult:
         session = Session.create(self._sessions_root)
@@ -49,7 +52,12 @@ class KengineSolver:
                 roles=self._config.roles,
                 profile=self._profile,
                 context_budget=self._config.context.step_prompt_tokens,
-                checkers=default_checkers(),
+                checkers=task_checkers(
+                    item.documents,
+                    has_givens=bool(item.givens),
+                    models=self._models,
+                    facts=self._config.facts,
+                ),
                 session=session,
                 limits=Limits(max_completion_tokens=self._token_budget),
                 formal_syntax=self._config.logic.syntax,

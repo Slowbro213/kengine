@@ -13,14 +13,21 @@ from kengine.eval import suites
 from kengine.eval.types import EvalItem, Size, SuiteName
 from kengine.loop.agent import RunResult
 from kengine.loop.task import JUDGE_FORMAT, Task, judge_question
+from kengine.retrieval.fake import FakeEmbedder, FakeEntailment
+from kengine.retrieval.models import Models, ModelsMissing
 
 runner = CliRunner()
+
+
+def fake_models(cache_dir: Path) -> Models:
+    return Models(FakeEntailment(), FakeEmbedder())
 
 
 @pytest.fixture(autouse=True)
 def isolated(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(main, "default_config_paths", lambda: [tmp_path / "kengine.toml"])
+    monkeypatch.setattr(main, "load_models", fake_models)  # no real models in tests
 
 
 def use_backend(monkeypatch: pytest.MonkeyPatch, backend: ScriptedBackend) -> None:
@@ -286,3 +293,51 @@ def test_cli_run_with_a_conclusion_judges_it(
             conclusion="Tom purrs.",
         )
     ]
+
+
+def test_cli_fetch_models_uses_the_models_dir(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    data = use_data_dir(tmp_path)
+    got: list[Path] = []
+
+    def fake_fetch(cache_dir: Path) -> list[Path]:
+        got.append(cache_dir)
+        return [cache_dir / "m"]
+
+    monkeypatch.setattr(main, "fetch_models", fake_fetch)
+    r = runner.invoke(main.app, ["fetch-models"])
+    assert r.exit_code == 0, r.output
+    assert got == [data / "models" / "hf"]
+
+
+def test_cli_run_doc_passes_the_files_as_documents(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    use_data_dir(tmp_path)
+    (tmp_path / "heat.txt").write_text("Heat was directed by Michael Mann.")
+    tasks: list[Task] = []
+    run = main.Agent.run
+
+    def record(self: main.Agent, task: Task) -> RunResult:
+        tasks.append(task)
+        return run(self, task)
+
+    monkeypatch.setattr(main.Agent, "run", record)
+    use_backend(monkeypatch, ScriptedBackend([FORMALIZE_NONE, think_reply()] * 2))
+    runner.invoke(main.app, ["run", "Who directed Heat?", "--doc", "heat.txt", "--max-steps", "1"])
+    assert [t.documents for t in tasks] == [["heat.txt: Heat was directed by Michael Mann."]]
+
+
+def test_cli_exits_2_when_the_models_are_missing(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    use_data_dir(tmp_path)
+
+    def missing(cache_dir: Path) -> Models:
+        raise ModelsMissing("run kengine fetch-models")
+
+    monkeypatch.setattr(main, "load_models", missing)
+    use_backend(monkeypatch, ScriptedBackend([]))
+    r = runner.invoke(main.app, ["run", "12 pens?", "--profile", "quick"])
+    assert r.exit_code == 2 and "fetch-models" in r.output

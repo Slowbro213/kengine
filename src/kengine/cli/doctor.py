@@ -11,6 +11,7 @@ from pydantic import BaseModel
 
 from kengine.backend.types import BackendError, BackendHealth, Message, ModelBackend
 from kengine.config import KengineConfig
+from kengine.retrieval.models import models_present
 
 THINK_PROBE_MAX_TOKENS = 2048
 
@@ -27,6 +28,7 @@ class DoctorReport(BaseModel):
     thinking_separated: bool | None
     thinking_detail: str = ""
     gpu: str | None
+    models: str = "off"
     ok: bool
 
 
@@ -56,6 +58,11 @@ def run_doctor(
     paths = [str(p) for p in config_paths if p.is_file()]
     health = backend.health()
     gpu = nvidia_smi()
+    if not config.facts.enabled:
+        models = "off"
+    else:
+        missing = models_present(config.models_dir)
+        models = "ok" if not missing else "missing: " + ", ".join(missing)
     if not health.ok:
         return DoctorReport(
             config_paths=paths,
@@ -64,6 +71,7 @@ def run_doctor(
             structured_detail="skipped: backend not healthy",
             thinking_separated=None,
             gpu=gpu,
+            models=models,
             ok=False,
         )
 
@@ -95,6 +103,7 @@ def run_doctor(
         thinking_separated=thinking_separated,
         thinking_detail=thinking_detail,
         gpu=gpu,
+        models=models,
         ok=health.ok and structured_ok,
     )
 
@@ -111,6 +120,7 @@ def render_report(rep: DoctorReport) -> str:
         f"[{mark(rep.thinking_separated)}] thinking   : separated={rep.thinking_separated} "
         f"{rep.thinking_detail}",
         f"       gpu        : {rep.gpu or 'nvidia-smi not available'}",
+        f"       models     : {rep.models}",
         f"overall: {'OK' if rep.ok else 'NOT OK'}",
     ]
     return "\n".join(lines)
