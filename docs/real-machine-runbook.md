@@ -113,3 +113,24 @@ A results directory is named by date, suite, solver, size and profile, and `eval
    - the gsm8k regression against Checkpoint B
    - insights for the owner: what M2 bought and cost on folio, whether formalization is reliable enough to rely on, what blocks most, and whether M3 or M5 should come next
 6. Commit everything under `eval/results/` except `sessions/` and push.
+
+## Checkpoint D (fact checks)
+
+Run these inside `nix-shell` on NixOS, with the ft1 server from Setup step 4 running. M3 adds the fact, consistency and inference-nli checkers, which run on the CPU with models from `kengine fetch-models` (about 870 MB, once).
+
+1. `git pull && uv sync --extra eval && uv run kengine fetch-models && uv run kengine doctor`. Doctor must show `models: ok`.
+2. **Baseline on the tuned model.** `uv run kengine eval hotpotqa --solver baseline --size small --out eval/results/checkpoint-d`. Checkpoint A's baseline used the i1 model, so this is the fair comparison.
+3. **Size the runs.** `uv run kengine eval hotpotqa --solver kengine --size smoke --profile quick --out eval/results/checkpoint-d`. Let `t` be its `mean_wall_s`. `N = min(100, floor(14400 / t / 10) * 10)`, at least 10, and 30 if that allows it: a 4-hour budget for step 4.
+4. **With vs. without.** `uv run kengine eval hotpotqa --solver kengine --size small --profile quick --limit N --out eval/results/checkpoint-d`, then the same with `--no-facts --out eval/results/checkpoint-d-nofacts`.
+5. **Regressions.** Consistency runs on every suite, so: `uv run kengine eval folio --solver kengine --size small --profile quick --limit 30 --out eval/results/checkpoint-d` and `uv run kengine eval gsm8k --solver kengine --size smoke --profile quick --out eval/results/checkpoint-d`. Compare each with its ft1 run in `eval/results/finetune-runpod/evals-tuned` (folio30: 5 right, 0 wrong; gsm8k: 8 of 10) using `uv run kengine eval-compare <old dir> <new dir>`.
+6. **Compare.** `uv run kengine eval-compare <step 2 dir> <step 4 dir>` for both step 4 runs.
+7. **Count verdicts.** `uv run python eval/scripts/count_verdicts.py eval/results/checkpoint-d` prints the verdicts of `facts`, `consistency` and `inference-nli` by outcome and status, per suite. Every `consistency` FAIL on folio or gsm8k is read by hand: those are false alarms unless the claims really conflict.
+8. **Write `eval/results/CHECKPOINT-D.md`** with:
+   - setup: commit, server command, model file, N and why
+   - a results table per run: n, headline (token F1 for hotpotqa), exact accuracy, abstention, answered accuracy, mean wall s/item, and the baseline's score on the same items
+   - with vs. without facts on hotpotqa: fixed, broke, still blocked, and the answered accuracy
+   - the verdict counts, and every consistency FAIL with a right/false-alarm label
+   - 3 audit-trail excerpts: one fact verified from a document, one answer the stated-answer rule blocked, one inference-nli verdict
+   - the folio and gsm8k regressions
+   - insights for the owner: what M3 bought on hotpotqa, how often the entailment model was wrong, and what to do next (M4 tools or M5 critic)
+9. Commit everything under `eval/results/` except `sessions/` and push.
