@@ -71,3 +71,14 @@ def test_logic_defaults():
     cfg = KengineConfig()
     assert cfg.logic.syntax == "text" and cfg.logic.formalize_givens
     assert cfg.roles.formalize == cfg.roles.extract
+
+
+def test_facts_defaults_and_override(tmp_path: Path) -> None:
+    cfg = load_config([])
+    assert cfg.facts.enabled and cfg.facts.searxng_url is None
+    assert (cfg.facts.verify_entail, cfg.facts.support_entail) == (0.9, 0.5)
+    assert cfg.models_dir == cfg.data_dir / "models" / "hf"
+    p = tmp_path / "k.toml"
+    p.write_text('[facts]\nenabled = false\nsearxng_url = "http://127.0.0.1:8888"\n')
+    cfg = load_config([p])
+    assert not cfg.facts.enabled and cfg.facts.searxng_url == "http://127.0.0.1:8888"

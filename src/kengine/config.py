@@ -84,6 +84,23 @@ class LogicConfig(BaseModel):
     answer_from_givens: bool = False
 
 
+class FactsConfig(BaseModel):
+    """The fact, consistency and inference-nli checkers (spec §5.5 #4, #5). Thresholds are
+    entailment-model probabilities, set from the M3 spikes."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    enabled: bool = True
+    top_k: int = Field(default=8, gt=0)
+    verify_entail: float = Field(default=0.9, ge=0, le=1)  # fact: `verified` at or above
+    support_entail: float = Field(default=0.5, ge=0, le=1)  # fact: `supported` at or above
+    contradict: float = Field(default=0.9, ge=0, le=1)
+    consistency_cosine: float = Field(default=0.75, ge=-1, le=1)
+    inference_entail: float = Field(default=0.9, ge=0, le=1)
+    # Web search (off unless set), e.g. "http://127.0.0.1:8888". Never used by evals.
+    searxng_url: str | None = None
+
+
 class KengineConfig(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -92,6 +109,7 @@ class KengineConfig(BaseModel):
     context: ContextConfig = Field(default_factory=ContextConfig)
     eval: EvalConfig = Field(default_factory=EvalConfig)
     logic: LogicConfig = Field(default_factory=LogicConfig)
+    facts: FactsConfig = Field(default_factory=FactsConfig)
     data_dir: Path = Field(default_factory=lambda: Path.home() / ".local/share/kengine")
     default_profile: str = "standard"
 
@@ -99,6 +117,10 @@ class KengineConfig(BaseModel):
     @classmethod
     def _expand_home(cls, value: Path) -> Path:
         return value.expanduser()
+
+    @property
+    def models_dir(self) -> Path:
+        return self.data_dir / "models" / "hf"
 
     @model_validator(mode="before")
     @classmethod

@@ -20,6 +20,11 @@ token_budget_per_task = 32768          # completion tokens per eval item (baseli
 syntax = "text"                        # how the model writes formal forms: text | json
 formalize_givens = true                # translate the task's givens into the formal fragment
 
+[facts]
+# Fact, consistency and inference checks with CPU-side models (`kengine fetch-models`).
+enabled = true
+# searxng_url = "http://127.0.0.1:8888"  # web search for facts; off when unset
+
 # Model roles. Sampling defaults follow the Qwen3.5 model card.
 [roles.think]                          # free-text reasoning, thinking mode
 thinking = true
