@@ -80,6 +80,8 @@ class LogicConfig(BaseModel):
 
     syntax: FormalSyntax = "text"  # set from the Checkpoint C probe (spec §9)
     formalize_givens: bool = True
+    # Let a True/False answer through when the givens alone show it (loop/gate.py).
+    answer_from_givens: bool = False
 
 
 class KengineConfig(BaseModel):

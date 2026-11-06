@@ -54,6 +54,7 @@ class KengineSolver:
                 limits=Limits(max_completion_tokens=self._token_budget),
                 formal_syntax=self._config.logic.syntax,
                 formalize_givens=self._config.logic.formalize_givens,
+                answer_from_givens=self._config.logic.answer_from_givens,
             )
             task = Task(
                 goal=item.question,

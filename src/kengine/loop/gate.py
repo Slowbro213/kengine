@@ -2,7 +2,11 @@
 
 When the task has a conclusion to judge and its formal form is known, a True/False/Uncertain
 answer must also be shown by what it rests on (`check_answer`), not just rest on checked
-claims."""
+claims.
+
+With `from_givens`, a True or False answer the model's citations don't support still passes
+when the givens alone show it (`givens_show`). The model picked the answer and the translation
+proves it, so two sources agree; the decision records which givens did it."""
 
 from __future__ import annotations
 
@@ -14,7 +18,7 @@ from pydantic import BaseModel, ConfigDict
 from kengine.beliefs.records import BeliefRecord
 from kengine.beliefs.status import TERMINAL, Status
 from kengine.checkers.base import BeliefView
-from kengine.checkers.logic import check_answer
+from kengine.checkers.logic import check_answer, givens_show
 from kengine.claims.schema import ClaimType, Formal
 from kengine.loop.profiles import GatePolicy
 
@@ -30,6 +34,7 @@ class GateDecision(BaseModel):
     blocking: list[str]
     acted_on_assumptions: list[str]
     reasons: list[str]
+    shown_by_givens: list[str] = []  # set when `from_givens` let the answer through
 
 
 def evaluate_gate(
@@ -38,6 +43,7 @@ def evaluate_gate(
     policy: GatePolicy,
     answer: str | None = None,
     conclusion: Formal | None = None,
+    from_givens: bool = False,
 ) -> GateDecision:
     """Check the cited claims and everything they transitively rest on, and that `answer`
     is right about `conclusion` when there is one."""
@@ -75,6 +81,17 @@ def evaluate_gate(
         why = check_answer(answer, conclusion, closure, view)
         if why is not None:
             reasons.append(why)
+    if reasons and judged and from_givens:
+        assert conclusion is not None and answer is not None
+        shown = givens_show(answer, conclusion, view)
+        if shown is not None:
+            return GateDecision(
+                allowed=True,
+                blocking=[],
+                acted_on_assumptions=[],
+                reasons=[],
+                shown_by_givens=shown,
+            )
     return GateDecision(
         allowed=not reasons, blocking=blocking, acted_on_assumptions=assumed, reasons=reasons
     )

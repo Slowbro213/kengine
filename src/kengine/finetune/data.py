@@ -47,6 +47,17 @@ def dev_story(story_id: str, dev_percent: int = 10) -> bool:
     return h % 100 < dev_percent
 
 
+def dev_items(rows: Iterable[Mapping[str, object]], dev_percent: int = 10) -> list[EvalItem]:
+    """Every row of the held-back stories, converted or not, as an eval item: puzzles that
+    neither training nor the evals have used."""
+    items: list[EvalItem] = []
+    for i, row in enumerate(rows):
+        if dev_story(str(row["story_id"]), dev_percent):
+            item = folio.parse_row(row, i)
+            items.append(item.model_copy(update={"id": f"folio-train-{item.id[len('folio-') :]}"}))
+    return items
+
+
 def completion_json(forms: list[list[str]]) -> str:
     """The answer in FORMALIZE's schema, spaced as in the prompt's example."""
     return json.dumps(

@@ -145,6 +145,7 @@ class Agent:
         retry_delay_s: float = 5.0,
         formal_syntax: FormalSyntax = "text",
         formalize_givens: bool = False,
+        answer_from_givens: bool = False,
     ) -> None:
         self.backend = backend
         self.roles = roles
@@ -158,6 +159,7 @@ class Agent:
         self.retry_delay_s = retry_delay_s
         self.formal_syntax: FormalSyntax = formal_syntax
         self.formalize_givens = formalize_givens
+        self.answer_from_givens = answer_from_givens
         self._reset()
 
     def _reset(self) -> None:
@@ -516,7 +518,12 @@ class Agent:
             self._last_blocked = False
             return
         decision = evaluate_gate(
-            preconditions, self.store, self.profile.final_gate, answer, self._conclusion
+            preconditions,
+            self.store,
+            self.profile.final_gate,
+            answer,
+            self._conclusion,
+            from_givens=self.answer_from_givens,
         )
         self._log(GateEvent(step=step.n, decision=decision.model_dump(mode="json")))
         if decision.allowed:

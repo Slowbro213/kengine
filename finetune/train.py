@@ -2,8 +2,10 @@
 
 The plan is docs/superpowers/plans/2026-11-05-translation-finetune.md. This trains a LoRA
 adapter on the pairs `kengine finetune-data` writes. Each pair is the prompt the agent
-sends, rendered with the model's chat template as llama-server renders it (thinking off),
-plus the JSON answer. Only the answer's tokens count toward the loss.
+sends, rendered with the model's chat template as llama-server renders it, plus the answer.
+Thinking is off unless the pair says `"thinking": true` (the THINK pairs from `kengine
+finetune-chains`, whose answer is the thinking, `</think>`, then the reply). Only the
+answer's tokens count toward the loss.
 
 The adapter with the lowest dev loss is kept. Training stops early at --max-hours.
 
@@ -41,7 +43,10 @@ END = "<|im_end|>\n"
 
 def encode(tok: Any, pair: dict[str, Any], max_len: int) -> dict[str, list[int]]:
     prompt = tok.apply_chat_template(
-        pair["messages"], tokenize=False, add_generation_prompt=True, enable_thinking=False
+        pair["messages"],
+        tokenize=False,
+        add_generation_prompt=True,
+        enable_thinking=pair.get("thinking", False),
     )
     p = tok(prompt, add_special_tokens=False)["input_ids"]
     c = tok(pair["completion"] + END, add_special_tokens=False)["input_ids"]
@@ -64,10 +69,16 @@ class Collate:
         ids = [b["input_ids"] + [self.pad_id] * (n - len(b["input_ids"])) for b in batch]
         labels = [b["labels"] + [-100] * (n - len(b["labels"])) for b in batch]
         mask = [[1] * len(b["input_ids"]) + [0] * (n - len(b["input_ids"])) for b in batch]
+        # Logits only from the token before the first answer token on, since nothing before
+        # counts toward the loss. Over a 250k vocabulary, the full sequence's logits don't
+        # fit in 8 GB.
+        start = min(next(i for i, t in enumerate(b["labels"]) if t != -100) for b in batch)
+        keep = n - start + 1
         return {
             "input_ids": torch.tensor(ids),
-            "labels": torch.tensor(labels),
+            "labels": torch.tensor(labels)[:, -keep:],
             "attention_mask": torch.tensor(mask),
+            "logits_to_keep": keep,
         }
 
 

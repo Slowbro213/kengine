@@ -4,7 +4,7 @@ from kengine.backend.fake import ScriptedBackend, ScriptedReply
 from kengine.claims.formalize import Formalization, formalize_messages
 from kengine.config import RolesConfig
 from kengine.eval.adapters import folio, gsm8k
-from kengine.finetune.data import build_pairs, dev_story, distill_gsm8k
+from kengine.finetune.data import build_pairs, dev_items, dev_story, distill_gsm8k
 
 
 def row(
@@ -60,6 +60,16 @@ def test_the_dev_split_is_by_story():
     pairs, _ = build_pairs(rows, dev_percent=10)
     assert {p.split for p in pairs} == {"train", "dev"}
     assert all((p.split == "dev") == dev_story(p.story_id) for p in pairs)
+
+
+def test_dev_items_are_every_row_of_the_held_back_stories():
+    rows = [
+        row(DOGS, ("Rex is a mammal.", "Mammal(rex)"), "Uncertain", story=str(i)) for i in range(50)
+    ]
+    items = dev_items(rows)
+    assert items and len(items) == sum(dev_story(str(i)) for i in range(50))
+    assert {i.id for i in items} == {"folio-train-42"}
+    assert items[0].gold == "Uncertain"  # kept even though z3 disagrees with the label
 
 
 def test_gsm8k_keeps_what_the_model_translates_today():

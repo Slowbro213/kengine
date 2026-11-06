@@ -29,7 +29,8 @@ from kengine.eval.probe_formal import run_probe
 from kengine.eval.runner import merge_shards, rescore, results_dir_name, run_eval, shard_dir_name
 from kengine.eval.taxonomy import summarize_taxonomy
 from kengine.eval.types import RunMetrics, Size, Solver, SuiteName
-from kengine.finetune.data import build_pairs, distill_gsm8k
+from kengine.finetune.chains import build_chain_pairs
+from kengine.finetune.data import build_pairs, dev_items, distill_gsm8k
 from kengine.loop.agent import Agent, Limits
 from kengine.loop.profiles import get_profile
 from kengine.loop.task import JUDGE_FORMAT, Task, judge_question, split_sentences
@@ -229,6 +230,7 @@ def run(
             ),
             formal_syntax=cfg.logic.syntax,
             formalize_givens=cfg.logic.formalize_givens,
+            answer_from_givens=cfg.logic.answer_from_givens,
         )
         givens = split_sentences(task)
         if conclusion is None:
@@ -303,20 +305,56 @@ def finetune_data(
     typer.echo(json.dumps(report))
 
 
+@app.command("finetune-chains")
+def finetune_chains(
+    out: Annotated[Path, typer.Option()] = Path("finetune/data-chains"),
+) -> None:
+    """Write THINK and extract training pairs: worked solutions to FOLIO-train rows, built
+    from the expert logic and checked by the logic checker."""
+    cfg, _ = _config()
+    rows = suites.load_rows("tasksource/folio", None, "train")
+    pairs, dropped = build_chain_pairs(rows, cfg.context.step_prompt_tokens)
+    out.mkdir(parents=True, exist_ok=True)
+    for split in ("train", "dev"):
+        lines = [p.model_dump_json() + "\n" for p in pairs if p.split == split]
+        (out / f"{split}.jsonl").write_text("".join(lines), encoding="utf-8")
+    think = [p for p in pairs if p.role == "think"]
+    extract = [p for p in pairs if p.role == "extract"]
+    report = {
+        "folio_rows": len(rows),
+        "kept": {s: sum(p.split == s for p in think) for s in ("train", "dev")},
+        "labels": dict(Counter(p.label for p in think)),
+        "steps": dict(
+            sorted(Counter(len(json.loads(p.completion)["claims"]) for p in extract).items())
+        ),
+        "dropped": dict(dropped.most_common()),
+    }
+    (out / "report.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    typer.echo(json.dumps(report))
+
+
 @app.command("probe-formal")
 def probe_formal(
     syntax: Annotated[FormalSyntax, typer.Option(help="text | json")] = "text",
     size: Annotated[Size, typer.Option()] = "small",
     limit: Annotated[int | None, typer.Option(min=1)] = None,
     seed: Annotated[int, typer.Option()] = 0,
+    split: Annotated[
+        Literal["validation", "train-dev"],
+        typer.Option(help="train-dev: FOLIO-train's held-back stories (all of them; ignores size)"),
+    ] = "validation",
     out: Annotated[Path, typer.Option()] = Path("eval/results"),
 ) -> None:
     """Formalize FOLIO items in SYNTAX and score the Z3 verdicts (spec §9)."""
     cfg, _ = _config()
-    items = suites.load_items("folio", size, seed)
+    if split == "train-dev":
+        items = dev_items(suites.load_rows("tasksource/folio", None, "train"))
+    else:
+        items = suites.load_items("folio", size, seed)
     if limit is not None:
         items = items[:limit]
-    name = f"{datetime.date.today().isoformat()}-folio-probe-{syntax}-{size}"
+    where = "train-dev" if split == "train-dev" else size
+    name = f"{datetime.date.today().isoformat()}-folio-probe-{syntax}-{where}"
     out_dir = out / (name + (f"-first{limit}" if limit is not None else ""))
     s = run_probe(backend_factory(cfg.backend), cfg.roles.formalize, syntax, items, out_dir)
     typer.echo(

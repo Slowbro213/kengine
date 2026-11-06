@@ -299,6 +299,29 @@ def check_answer(
     return f"{why} Rest the answer on a claim that states the conclusion's negation"
 
 
+def givens_show(answer: str, conclusion: Formal, view: BeliefView) -> list[str] | None:
+    """The givens that show a True or False `answer` about `conclusion` on their own, or
+    None if they don't (or the answer is Uncertain, which a lost link in the translation
+    would also give).
+
+    The answer is still the model's: this only finds the proof it failed to cite."""
+    label = answer_label(answer)
+    if label not in ("True", "False"):
+        return None
+    givens = [
+        r
+        for r in view.all()
+        if r.claim.type == ClaimType.GIVEN and r.status not in TERMINAL and _holds(r)
+    ]
+    if not givens:
+        return None
+    premises, owners = _premises(givens)
+    d = decide(premises, _statements(conclusion))
+    if d.kind != ("entailed" if label == "True" else "refuted"):
+        return None
+    return list(dict.fromkeys(owners[i] for i in d.core))
+
+
 def _premises(records: Sequence[BeliefRecord]) -> tuple[list[Statement], list[str]]:
     """The statements of `records`' formal forms, and the id of the claim each came from."""
     premises: list[Statement] = []

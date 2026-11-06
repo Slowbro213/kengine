@@ -1,0 +1,25 @@
+{
+  "folio_rows": 1001,
+  "kept": {
+    "train": 309,
+    "dev": 39
+  },
+  "labels": {
+    "True": 123,
+    "Uncertain": 172,
+    "False": 53
+  },
+  "steps": {
+    "1": 303,
+    "2": 19,
+    "3": 12,
+    "4": 6,
+    "5": 5,
+    "6": 2,
+    "8": 1
+  },
+  "dropped": {
+    "doesn't convert": 608,
+    "False: no case that breaks the conclusion": 45
+  }
+}

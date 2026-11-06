@@ -135,3 +135,33 @@ def test_with_a_conclusion_an_answer_may_rest_on_givens():
     assert evaluate_gate(["b1", "b2"], s, GatePolicy.STRICT, "True", MAMMAL).allowed
     d = evaluate_gate(["b1", "b2"], s, GatePolicy.STANDARD, "False", MAMMAL)
     assert d.reasons == ["the conclusion follows from b1, b2, so it isn't false"]
+
+
+def test_from_givens_lets_a_true_or_false_answer_through_when_the_givens_show_it():
+    s = _dogs()
+    # b3 alone doesn't show mammal(rex); the givens b1, b2 do.
+    d = evaluate_gate(["b3"], s, GatePolicy.STANDARD, "True", MAMMAL, from_givens=True)
+    assert d.allowed and d.reasons == [] and d.shown_by_givens == ["b1", "b2"]
+    assert not evaluate_gate(["b3"], s, GatePolicy.STANDARD, "True", MAMMAL).allowed
+
+
+def test_from_givens_never_changes_the_models_answer():
+    s = _dogs()
+    d = evaluate_gate(["b3"], s, GatePolicy.STANDARD, "False", MAMMAL, from_givens=True)
+    assert not d.allowed and d.shown_by_givens == []
+
+
+def test_from_givens_leaves_uncertain_to_the_usual_check():
+    """A lost link in the translation also leaves a conclusion open, so the givens alone
+    never pass an Uncertain."""
+    s = _dogs()
+    other = Formal(statements=("cat(rex)",))
+    d = evaluate_gate(["b9"], s, GatePolicy.STANDARD, "Uncertain", other, from_givens=True)
+    assert not d.allowed and d.shown_by_givens == []
+
+
+def test_from_givens_needs_an_answer_about_a_conclusion_but_no_citations():
+    s = _dogs()
+    d = evaluate_gate([], s, GatePolicy.STANDARD, "True", MAMMAL, from_givens=True)
+    assert d.allowed and d.shown_by_givens == ["b1", "b2"]
+    assert not evaluate_gate([], s, GatePolicy.STANDARD, from_givens=True).allowed

@@ -547,6 +547,27 @@ def test_a_given_that_still_says_everything_is_left_informal(tmp_path: Path):
     assert event.errors[0].endswith("Left without a formal form.")  # type: ignore[union-attr]
 
 
+def test_answer_from_givens_passes_an_answer_whose_citations_dont_show_it(tmp_path: Path):
+    """The model cites a claim that fails its check, but the givens show its answer."""
+    wrong = claim("c1", "inference", "Tile is round", ["b1"])
+    wrong["formal"] = {"statements": ["round(tile)"]}
+    agent, _ = formal_agent(
+        [
+            formalize_json(
+                (1, ["four_sided(x) -> shape(x)"]), (2, ["four_sided(tile)"]), (3, ["shape(tile)"])
+            ),
+            think(),
+            extract_json([wrong], final("True", ["c1"])),
+        ],
+        tmp_path,
+    )
+    agent.answer_from_givens = True
+    r = agent.run(Task(goal="g", givens=SHAPES[:2], conclusion="Tile is a shape."))
+    assert (r.status, r.answer) == ("answered", "True")
+    (gate,) = [e for e in agent.session.log.read() if e.kind == "gate"]
+    assert gate.decision["shown_by_givens"] == ["b1", "b2"]  # type: ignore[union-attr]
+
+
 def test_the_answer_is_checked_against_the_conclusion(tmp_path: Path):
     inference = claim("c1", "inference", "Tile is a shape", ["b1", "b2"])
     inference["formal"] = {"statements": ["shape(tile)"]}
