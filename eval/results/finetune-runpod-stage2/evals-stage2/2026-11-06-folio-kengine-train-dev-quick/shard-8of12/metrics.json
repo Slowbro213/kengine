@@ -1,0 +1,17 @@
+{
+  "suite": "folio",
+  "solver": "kengine",
+  "n": 8,
+  "headline_accuracy": 0.125,
+  "exact_accuracy": 0.125,
+  "abstention_rate": 0.625,
+  "answered_accuracy": 0.3333333333333333,
+  "status_counts": {
+    "blocked": 5,
+    "answered": 3
+  },
+  "mean_model_calls": 8.5,
+  "mean_prompt_tokens": 11241.75,
+  "mean_completion_tokens": 986.75,
+  "mean_wall_s": 172.75116826273734
+}

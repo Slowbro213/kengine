@@ -1,0 +1,5 @@
++ cd /root/work/evals-ft2
++ /root/.local/bin/uv run --project /root/kengine kengine eval folio --solver kengine --profile quick --split train-dev --shard 9/12 --out .
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+folio/kengine/smoke: 8 items -> 2026-11-06-folio-kengine-train-dev-quick/shard-9of12
+n=8 headline=0.250 exact=0.250 abstention=0.750 answered_acc=1.000 statuses={'blocked': 6, 'answered': 2} mean_wall_s=180.2

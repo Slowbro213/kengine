@@ -1,0 +1,155 @@
++ F=/root/kengine/finetune
++ L=/root/llama.cpp
++ W=/root/work
++ PY=/root/kengine/finetune/.venv/bin/python
++ UV=/root/.local/bin/uv
++ ps -eo args
++ grep -q '^bash /root/prep.sh'
++ cd /root/kengine
++ git pull -q
++ /root/.local/bin/uv sync -q --extra eval
++ git log --oneline -1
+7268fee feat: kengine eval --split train-dev, the full agent on FOLIO-train's held-back stories
++ /root/kengine/finetune/.venv/bin/python /root/kengine/finetune/merge.py --base /root/kengine/finetune/base --adapter /root/kengine/finetune/out/adapter --out /root/work/ft2-hf
+model.safetensors-00001-of-00004.safetensors: 12 merged so far
+model.safetensors-00002-of-00004.safetensors: 62 merged so far
+model.safetensors-00003-of-00004.safetensors: 123 merged so far
+model.safetensors-00004-of-00004.safetensors: 200 merged so far
+merged 200 weights (scale 2.0) into /root/work/ft2-hf
++ PYTHONPATH=/root/llama.cpp/gguf-py
++ /root/kengine/finetune/.venv/bin/python /root/llama.cpp/convert_hf_to_gguf.py /root/work/ft2-hf --outtype bf16 --outfile /root/work/ft2-bf16.gguf
++ rm -rf /root/work/ft2-hf
++ /root/llama.cpp/build/bin/llama-quantize /root/work/ft2-bf16.gguf /root/work/ft2-Q4_K_M.gguf Q4_K_M
++ rm /root/work/ft2-bf16.gguf
++ ls -la /root/work/ft1-Q4_K_M.gguf /root/work/ft2-Q4_K_M.gguf
+-rw-r--r-- 1 root root 5780090848 Nov  6 13:30 /root/work/ft1-Q4_K_M.gguf
+-rw-r--r-- 1 root root 5780090816 Nov  6 14:27 /root/work/ft2-Q4_K_M.gguf
++ port=18081
++ for n in ft1 ft2
+++ '[' ft1 = ft1 ']'
+++ echo 12
++ np=12
++ mkdir -p /root/work/evals-ft1
++ setsid nohup /root/llama.cpp/build/bin/llama-server -m /root/work/ft1-Q4_K_M.gguf -ngl 99 -c 393216 -np 12 -fa on -ctk q8_0 -ctv q8_0 --reasoning-format deepseek --host 127.0.0.1 --port 18081 --spec-type ngram-mod
++ printf '[backend]\nbase_url = "http://127.0.0.1:%s"\n' 18081
++ port=18082
++ for n in ft1 ft2
+++ '[' ft2 = ft1 ']'
+++ echo 21
++ np=21
++ mkdir -p /root/work/evals-ft2
++ setsid nohup /root/llama.cpp/build/bin/llama-server -m /root/work/ft2-Q4_K_M.gguf -ngl 99 -c 688128 -np 21 -fa on -ctk q8_0 -ctv q8_0 --reasoning-format deepseek --host 127.0.0.1 --port 18082 --spec-type ngram-mod
++ printf '[backend]\nbase_url = "http://127.0.0.1:%s"\n' 18082
++ port=18083
++ for p in 18081 18082
++ timeout 300 bash -c 'until curl -sf http://127.0.0.1:18081/health >/dev/null; do sleep 2; done'
++ for p in 18081 18082
++ timeout 300 bash -c 'until curl -sf http://127.0.0.1:18082/health >/dev/null; do sleep 2; done'
++ nvidia-smi --query-gpu=memory.used --format=csv
+memory.used [MiB]
+34280 MiB
++ pids=
+++ seq 12
++ for k in $(seq 12)
++ pids=' 55707'
++ for k in $(seq 12)
++ ev ft1 eval folio --solver kengine --profile quick --split train-dev --shard 1/12
++ pids=' 55707 55708'
++ for k in $(seq 12)
++ ev ft1 eval folio --solver kengine --profile quick --split train-dev --shard 2/12
++ pids=' 55707 55708 55710'
++ for k in $(seq 12)
++ ev ft1 eval folio --solver kengine --profile quick --split train-dev --shard 3/12
++ pids=' 55707 55708 55710 55711'
++ for k in $(seq 12)
++ ev ft1 eval folio --solver kengine --profile quick --split train-dev --shard 4/12
++ pids=' 55707 55708 55710 55711 55714'
++ for k in $(seq 12)
++ ev ft1 eval folio --solver kengine --profile quick --split train-dev --shard 5/12
++ pids=' 55707 55708 55710 55711 55714 55717'
++ for k in $(seq 12)
++ pids=' 55707 55708 55710 55711 55714 55717 55718'
++ ev ft1 eval folio --solver kengine --profile quick --split train-dev --shard 7/12
++ for k in $(seq 12)
++ ev ft1 eval folio --solver kengine --profile quick --split train-dev --shard 6/12
++ pids=' 55707 55708 55710 55711 55714 55717 55718 55721'
++ for k in $(seq 12)
++ ev ft1 eval folio --solver kengine --profile quick --split train-dev --shard 8/12
++ pids=' 55707 55708 55710 55711 55714 55717 55718 55721 55725'
++ for k in $(seq 12)
++ ev ft1 eval folio --solver kengine --profile quick --split train-dev --shard 9/12
++ pids=' 55707 55708 55710 55711 55714 55717 55718 55721 55725 55727'
++ for k in $(seq 12)
++ ev ft1 eval folio --solver kengine --profile quick --split train-dev --shard 10/12
++ pids=' 55707 55708 55710 55711 55714 55717 55718 55721 55725 55727 55730'
++ ev ft1 eval folio --solver kengine --profile quick --split train-dev --shard 11/12
++ for k in $(seq 12)
++ pids=' 55707 55708 55710 55711 55714 55717 55718 55721 55725 55727 55730 55734'
++ ev ft1 eval folio --solver kengine --profile quick --split train-dev --shard 12/12
+++ seq 6
++ for k in $(seq 6)
++ pids=' 55707 55708 55710 55711 55714 55717 55718 55721 55725 55727 55730 55734 55743'
++ for k in $(seq 6)
++ pids=' 55707 55708 55710 55711 55714 55717 55718 55721 55725 55727 55730 55734 55743 55744'
++ for k in $(seq 6)
++ ev ft2 eval folio --solver kengine --size small --profile quick --limit 30 --shard 1/6
++ pids=' 55707 55708 55710 55711 55714 55717 55718 55721 55725 55727 55730 55734 55743 55744 55746'
++ ev ft2 eval folio --solver kengine --size small --profile quick --limit 30 --shard 2/6
++ for k in $(seq 6)
++ pids=' 55707 55708 55710 55711 55714 55717 55718 55721 55725 55727 55730 55734 55743 55744 55746 55747'
++ for k in $(seq 6)
++ ev ft2 eval folio --solver kengine --size small --profile quick --limit 30 --shard 3/6
++ ev ft2 eval folio --solver kengine --size small --profile quick --limit 30 --shard 4/6
++ pids=' 55707 55708 55710 55711 55714 55717 55718 55721 55725 55727 55730 55734 55743 55744 55746 55747 55749'
++ for k in $(seq 6)
++ pids=' 55707 55708 55710 55711 55714 55717 55718 55721 55725 55727 55730 55734 55743 55744 55746 55747 55749 55753'
++ ev ft2 eval folio --solver kengine --size small --profile quick --limit 30 --shard 5/6
++ ev ft2 eval folio --solver kengine --size small --profile quick --limit 30 --shard 6/6
++ for k in 1 2
++ pids=' 55707 55708 55710 55711 55714 55717 55718 55721 55725 55727 55730 55734 55743 55744 55746 55747 55749 55753 55758'
++ for k in 1 2
++ ev ft2 eval gsm8k --solver kengine --size smoke --profile quick --shard 1/2
++ pids=' 55707 55708 55710 55711 55714 55717 55718 55721 55725 55727 55730 55734 55743 55744 55746 55747 55749 55753 55758 55762'
++ ev ft2 eval gsm8k --solver kengine --size smoke --profile quick --shard 2/2
++ pids=' 55707 55708 55710 55711 55714 55717 55718 55721 55725 55727 55730 55734 55743 55744 55746 55747 55749 55753 55758 55762 55764'
++ ev ft2 probe-formal --size full
+++ seq 12
++ for k in $(seq 12)
++ pids=' 55707 55708 55710 55711 55714 55717 55718 55721 55725 55727 55730 55734 55743 55744 55746 55747 55749 55753 55758 55762 55764 55776'
++ for k in $(seq 12)
++ ev ft2 eval folio --solver kengine --profile quick --split train-dev --shard 1/12
++ pids=' 55707 55708 55710 55711 55714 55717 55718 55721 55725 55727 55730 55734 55743 55744 55746 55747 55749 55753 55758 55762 55764 55776 55780'
++ for k in $(seq 12)
++ ev ft2 eval folio --solver kengine --profile quick --split train-dev --shard 2/12
++ pids=' 55707 55708 55710 55711 55714 55717 55718 55721 55725 55727 55730 55734 55743 55744 55746 55747 55749 55753 55758 55762 55764 55776 55780 55783'
++ for k in $(seq 12)
++ ev ft2 eval folio --solver kengine --profile quick --split train-dev --shard 3/12
++ pids=' 55707 55708 55710 55711 55714 55717 55718 55721 55725 55727 55730 55734 55743 55744 55746 55747 55749 55753 55758 55762 55764 55776 55780 55783 55787'
++ for k in $(seq 12)
++ ev ft2 eval folio --solver kengine --profile quick --split train-dev --shard 4/12
++ pids=' 55707 55708 55710 55711 55714 55717 55718 55721 55725 55727 55730 55734 55743 55744 55746 55747 55749 55753 55758 55762 55764 55776 55780 55783 55787 55790'
++ for k in $(seq 12)
++ ev ft2 eval folio --solver kengine --profile quick --split train-dev --shard 5/12
++ pids=' 55707 55708 55710 55711 55714 55717 55718 55721 55725 55727 55730 55734 55743 55744 55746 55747 55749 55753 55758 55762 55764 55776 55780 55783 55787 55790 55795'
++ for k in $(seq 12)
++ pids=' 55707 55708 55710 55711 55714 55717 55718 55721 55725 55727 55730 55734 55743 55744 55746 55747 55749 55753 55758 55762 55764 55776 55780 55783 55787 55790 55795 55797'
++ for k in $(seq 12)
++ ev ft2 eval folio --solver kengine --profile quick --split train-dev --shard 6/12
++ ev ft2 eval folio --solver kengine --profile quick --split train-dev --shard 7/12
++ pids=' 55707 55708 55710 55711 55714 55717 55718 55721 55725 55727 55730 55734 55743 55744 55746 55747 55749 55753 55758 55762 55764 55776 55780 55783 55787 55790 55795 55797 55801'
++ for k in $(seq 12)
++ ev ft2 eval folio --solver kengine --profile quick --split train-dev --shard 8/12
++ pids=' 55707 55708 55710 55711 55714 55717 55718 55721 55725 55727 55730 55734 55743 55744 55746 55747 55749 55753 55758 55762 55764 55776 55780 55783 55787 55790 55795 55797 55801 55803'
++ for k in $(seq 12)
++ ev ft2 eval folio --solver kengine --profile quick --split train-dev --shard 9/12
++ pids=' 55707 55708 55710 55711 55714 55717 55718 55721 55725 55727 55730 55734 55743 55744 55746 55747 55749 55753 55758 55762 55764 55776 55780 55783 55787 55790 55795 55797 55801 55803 55809'
++ ev ft2 eval folio --solver kengine --profile quick --split train-dev --shard 10/12
++ for k in $(seq 12)
++ pids=' 55707 55708 55710 55711 55714 55717 55718 55721 55725 55727 55730 55734 55743 55744 55746 55747 55749 55753 55758 55762 55764 55776 55780 55783 55787 55790 55795 55797 55801 55803 55809 55813'
++ for k in $(seq 12)
++ ev ft2 eval folio --solver kengine --profile quick --split train-dev --shard 11/12
++ pids=' 55707 55708 55710 55711 55714 55717 55718 55721 55725 55727 55730 55734 55743 55744 55746 55747 55749 55753 55758 55762 55764 55776 55780 55783 55787 55790 55795 55797 55801 55803 55809 55813 55820'
++ fail=0
++ for p in $pids
++ wait 55707
++ ev ft2 eval folio --solver kengine --profile quick --split train-dev --shard 12/12

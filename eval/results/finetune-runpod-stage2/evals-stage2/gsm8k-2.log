@@ -1,0 +1,5 @@
++ cd /root/work/evals-ft2
++ /root/.local/bin/uv run --project /root/kengine kengine eval gsm8k --solver kengine --size smoke --profile quick --shard 2/2 --out .
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+gsm8k/kengine/smoke: 5 items -> 2026-11-06-gsm8k-kengine-smoke-quick/shard-2of2
+n=5 headline=0.200 exact=0.200 abstention=0.800 answered_acc=1.000 statuses={'blocked': 4, 'answered': 1} mean_wall_s=301.6

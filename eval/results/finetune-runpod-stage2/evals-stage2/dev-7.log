@@ -1,0 +1,7 @@
++ cd /root/work/evals-ft2
++ /root/.local/bin/uv run --project /root/kengine kengine eval folio --solver kengine --profile quick --split train-dev --shard 7/12 --out .
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Generating train split: 0 examples [00:00, ? examples/s]Generating train split: 1001 examples [00:00, 76714.33 examples/s]
+Generating validation split: 0 examples [00:00, ? examples/s]Generating validation split: 203 examples [00:00, 48717.96 examples/s]
+folio/kengine/smoke: 8 items -> 2026-11-06-folio-kengine-train-dev-quick/shard-7of12
+n=8 headline=0.250 exact=0.250 abstention=0.500 answered_acc=0.500 statuses={'blocked': 4, 'answered': 4} mean_wall_s=191.0

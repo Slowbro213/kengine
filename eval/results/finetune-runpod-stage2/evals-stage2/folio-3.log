@@ -1,0 +1,5 @@
++ cd /root/work/evals-ft2
++ /root/.local/bin/uv run --project /root/kengine kengine eval folio --solver kengine --size small --profile quick --limit 30 --shard 3/6 --out .
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+folio/kengine/small: 5 items -> 2026-11-06-folio-kengine-small-quick-first30/shard-3of6
+n=5 headline=0.200 exact=0.200 abstention=0.600 answered_acc=0.500 statuses={'blocked': 3, 'answered': 2} mean_wall_s=255.1

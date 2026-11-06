@@ -1,6 +1,6 @@
 # Fine-tune plan, stage 2: teach the model to write steps the checker accepts
 
-**Status: waiting for the owner's approval.** Nothing has been spent. The data and a test run on the small model are done at home.
+**Status: run on RunPod on 2026-11-06 and failed the stop rule. We keep the stage-1 model.** The results are in "What the RunPod run found" at the end.
 
 Stage 1 (`2026-11-05-translation-finetune.md`) taught the model to translate. Translation got much better (probe-formal 134 of 203, against 84), but the full agent barely moved. It's blocked at the reasoning step: in 14 of the tuned model's 19 blocked folio runs, the answer it was trying to give was right, but the checker refused a step ("b79 doesn't follow from b72, b54") or the steps it cited didn't show the conclusion.
 
@@ -65,6 +65,36 @@ The same `finetune/run.sh` as stage 1, training one new adapter on the base 9B w
 - **The thinking part is short and made up.** The agent runs THINK with thinking on, where the model now thinks at length. Training on short thinking may make it think less on hard puzzles. The alternative is to train only the visible reply and leave the thinking alone, which I can test at home first.
 - **Small data, one style.** As in stage 1, the model may learn FOLIO's style more than reasoning. Checks 2 and 3 are there to catch that.
 
-## What the owner does
+## What the RunPod run found
 
-Approve (or change) the plan, and create a new RunPod API key when it's time. The old one is deleted.
+The owner approved the plan with the first fix for the main risk: only 25% of the Uncertain training puzzles are kept (205 train puzzles, 39 held back; 104 Uncertain dropped). One adapter was trained on the base 9B with both datasets: 860 training pairs, 3 rounds, 51 minutes on an A40, 10 GB of graphics memory at most. The best dev loss was after round 1 (0.073), so that checkpoint was kept. The model was merged, converted and quantized to Q4_K_M on the pod, and the checks ran there. Results are in `eval/results/finetune-runpod-stage2/`.
+
+| Check | Stage 1 (kept) | Stage 2 | Goal |
+|---|---|---|---|
+| 1. folio, 30 items | 5 right, 0 wrong | **14 right, 3 wrong** | ≥ 8 right, 0 wrong |
+| 2. held-back stories, 93 | not run (see below) | **24 right, 18 wrong**, 51 blocked | 0 wrong |
+| 3. gsm8k smoke, 10 | 8 right | **4 right**, 1 wrong, 5 blocked | no drop |
+| 4. probe-formal | 28 of the same 44 items | **31 of 44** (stopped early) | near stage 1 |
+
+**Stop rule: failed.** Check 1 is 9 points better, but checks 1, 2 and 3 all let wrong answers through, and math dropped by half. We keep the stage-1 model.
+
+**What went wrong:**
+
+- **Wrong "Uncertain" answers got through, as the risk section feared.** 18 of the 22 wrong answers are "Uncertain" when the answer key has a definite answer (3 of 3 in check 1, 14 of 18 in check 2, and the one in math). The model's translation drops a link, z3 then finds the conclusion open, and the gate accepts Uncertain. Keeping only a quarter of the Uncertain data wasn't enough.
+- **The Uncertain habit spread to math.** On 5 of the 10 gsm8k problems the model answered "Uncertain". The checker blocked 4 of them, but one got through, and the other blocks cost right answers.
+- **True and False got better.** In check 1 all 8 True/False answers were right (stage 1: 5), and in check 2, 12 of 16. So the reasoning data does help with proofs. What fails is Uncertain.
+- **Translation held up.** The probe was too slow to finish on the pod (it runs one item at a time), so it was stopped at 44 of 203. On those 44 items stage 2 got 31 right and stage 1 got 28.
+
+**Cost:** the pod ran about 1 h 45 min at $0.59/hour, **about $1.05**. It is deleted.
+
+**Notes for next time:**
+
+- Check 2 on the stage-1 model was started for comparison, but at about 15 minutes per item while sharing the GPU it would have taken hours, so it was stopped after 5 items. The stage-1 shortcut test (`probe-formal --split train-dev`) already covers those stories for translation.
+- probe-formal runs one item at a time, so on a pod it should run alone or be split into shards like the evals.
+- A setup script failed silently: `uv run kengine --help | head -3` under `set -o pipefail` exits with an error when `head` closes the pipe, so the "setup done" marker never printed and the pod sat idle about 10 minutes. Don't pipe into `head` in a pipefail script.
+
+**What could come next (not approved):**
+
+1. Train on True/False reasoning only (no Uncertain at all), and let Uncertain come only from the checker. The True/False results above suggest this could keep the gains without the wrong Uncertains.
+2. Make the gate stricter: accept Uncertain only when a second, independent translation of the givens also finds the conclusion open.
+3. Add some gsm8k-style data so the math habit isn't lost.
